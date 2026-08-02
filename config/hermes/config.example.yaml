@@ -6,6 +6,21 @@ skills:
   # 모든 변경을 사전 검토하려는 환경에서는 true로 전환한다.
   write_approval: false
 
+plugins:
+  enabled:
+    - lala-web-openai-codex
+
+web:
+  search_backend: openai-codex
+  extract_backend: openai-codex
+  openai_codex:
+    allowed_domains:
+      - adobe.com
+      - youtube.com
+      - youtu.be
+      - petapixel.com
+      - fstoppers.com
+
 mcp_servers:
   lala-tools:
     command: "uv"
@@ -13,7 +28,8 @@ mcp_servers:
     env:
       LALA_PROJECT_ROOT: "${LALA_PROJECT_ROOT}"
       LALA_VAR_DIR: "${LALA_VAR_DIR}"
-      LALA_RAW_DIR: "${LALA_RAW_DIR}"
+      # raw 지식은 외부 데이터 볼륨이 아니라 항상 현재 프로젝트의 raw/에 저장한다.
+      LALA_RAW_DIR: "${LALA_PROJECT_ROOT}/raw"
       LALA_TECHNICAL_LIBRARY_DIR: "${LALA_TECHNICAL_LIBRARY_DIR}"
       LALA_OUTPUT_DIR: "${LALA_OUTPUT_DIR}"
       LALA_CODEX_EXECUTABLE: "${LALA_CODEX_EXECUTABLE}"

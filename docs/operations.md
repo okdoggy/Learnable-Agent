@@ -3,14 +3,19 @@
 ## 배포 전
 
 - `LALA_API_KEY`, `LALA_SIGNING_SECRET`, `HERMES_API_KEY`, Slack 토큰을 secret store에서 주입한다.
-- `LALA_VAR_DIR`, `LALA_RAW_DIR`, `LALA_TECHNICAL_LIBRARY_DIR`, `LALA_OUTPUT_DIR`를 쓰기 가능한
-  영속 볼륨으로 지정한다.
+- `LALA_VAR_DIR`, `LALA_TECHNICAL_LIBRARY_DIR`, `LALA_OUTPUT_DIR`를 쓰기 가능한 영속 볼륨으로
+  지정한다. `LALA_RAW_DIR`는 `${LALA_PROJECT_ROOT}/raw`로 고정해 수동 실행과 cron 실행 결과가
+  모두 프로젝트 저장소 안에 남도록 한다.
 - Hermes 호스트와 scheduler에 `TZ=Asia/Seoul`을 설정한다.
 - Hermes 서비스의 `HERMES_MODEL` 또는 `model.default`를 무인 작업에 사용할 모델로 설정한다.
   per-job override가 필요하면 등록 후 Hermes의 `cronjob` update 도구나 dashboard에서 model/provider를
   지정한다. 현재 `hermes cron create` CLI에는 해당 override flag가 없다.
 - `config/hermes/config.example.yaml`을 병합하고 `lala-tools` MCP의 명시된 renderer/raw/technical
   도구만 노출한다.
+- `scripts/register-hermes-cron.sh`가 프로젝트의 `lala-web-openai-codex` plugin을 Hermes profile에
+  연결하고 `web.search_backend`와 `web.extract_backend`를 `openai-codex`로 설정한다. 이 backend는
+  기존 Codex/ChatGPT OAuth로 GPT hosted `web_search`를 호출하므로 Chrome이나 별도 API key가
+  필요하지 않다. 설정 후 gateway를 재시작한다.
 - 등록 직후 Hermes의 `cronjob.update`로 수집 작업은
   `enabled_toolsets=["web","file","skills","mcp-lala-tools"]`, Curator 작업은
   `enabled_toolsets=["file","skills","mcp-lala-tools"]`로 고정한다. CLI로만 운영할 때는
