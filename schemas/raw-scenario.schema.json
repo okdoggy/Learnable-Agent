@@ -1,0 +1,342 @@
+{
+  "$defs": {
+    "RawCollection": {
+      "additionalProperties": false,
+      "properties": {
+        "collector_version": {
+          "pattern": "^\\d+\\.\\d+\\.\\d+$",
+          "title": "Collector Version",
+          "type": "string"
+        },
+        "content_sha256": {
+          "anyOf": [
+            {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Content Sha256"
+        },
+        "collected_at": {
+          "format": "date-time",
+          "title": "Collected At",
+          "type": "string"
+        }
+      },
+      "required": [
+        "collector_version",
+        "collected_at"
+      ],
+      "title": "RawCollection",
+      "type": "object"
+    },
+    "RawDevice": {
+      "additionalProperties": false,
+      "properties": {
+        "capture_device": {
+          "anyOf": [
+            {
+              "maxLength": 1000,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Capture Device"
+        },
+        "editing_device": {
+          "anyOf": [
+            {
+              "maxLength": 1000,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Editing Device"
+        },
+        "software": {
+          "maxLength": 1000,
+          "minLength": 1,
+          "title": "Software",
+          "type": "string"
+        }
+      },
+      "required": [
+        "software"
+      ],
+      "title": "RawDevice",
+      "type": "object"
+    },
+    "RawMethod": {
+      "additionalProperties": false,
+      "properties": {
+        "steps": {
+          "items": {
+            "$ref": "#/$defs/RawMethodStep"
+          },
+          "maxItems": 64,
+          "minItems": 1,
+          "title": "Steps",
+          "type": "array"
+        }
+      },
+      "required": [
+        "steps"
+      ],
+      "title": "RawMethod",
+      "type": "object"
+    },
+    "RawMethodStep": {
+      "additionalProperties": false,
+      "properties": {
+        "tool": {
+          "maxLength": 1000,
+          "minLength": 1,
+          "title": "Tool",
+          "type": "string"
+        },
+        "parameter": {
+          "maxLength": 1000,
+          "minLength": 1,
+          "title": "Parameter",
+          "type": "string"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "maxLength": 1000,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Value"
+        },
+        "unit": {
+          "anyOf": [
+            {
+              "maxLength": 1000,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Unit"
+        },
+        "reported_as": {
+          "enum": [
+            "exact",
+            "qualitative"
+          ],
+          "title": "Reported As",
+          "type": "string"
+        }
+      },
+      "required": [
+        "tool",
+        "parameter",
+        "reported_as"
+      ],
+      "title": "RawMethodStep",
+      "type": "object"
+    },
+    "RawScenarioTaxonomy": {
+      "additionalProperties": false,
+      "properties": {
+        "subject": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[a-z0-9][a-z0-9-]*$",
+          "title": "Subject",
+          "type": "string"
+        },
+        "condition": {
+          "items": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[a-z0-9][a-z0-9-]*$",
+            "type": "string"
+          },
+          "maxItems": 32,
+          "minItems": 1,
+          "title": "Condition",
+          "type": "array"
+        },
+        "intent": {
+          "items": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[a-z0-9][a-z0-9-]*$",
+            "type": "string"
+          },
+          "maxItems": 32,
+          "minItems": 1,
+          "title": "Intent",
+          "type": "array"
+        }
+      },
+      "required": [
+        "subject",
+        "condition",
+        "intent"
+      ],
+      "title": "RawScenarioTaxonomy",
+      "type": "object"
+    },
+    "RawSource": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "enum": [
+            "official",
+            "magazine",
+            "youtube",
+            "social",
+            "community",
+            "other"
+          ],
+          "title": "Type",
+          "type": "string"
+        },
+        "publisher": {
+          "maxLength": 1000,
+          "minLength": 1,
+          "title": "Publisher",
+          "type": "string"
+        },
+        "author": {
+          "default": "unknown",
+          "maxLength": 1000,
+          "minLength": 1,
+          "title": "Author",
+          "type": "string"
+        },
+        "url": {
+          "format": "uri",
+          "minLength": 1,
+          "title": "Url",
+          "type": "string"
+        },
+        "published_at": {
+          "anyOf": [
+            {
+              "format": "date",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Published At"
+        },
+        "accessed_at": {
+          "format": "date-time",
+          "title": "Accessed At",
+          "type": "string"
+        },
+        "original_language": {
+          "pattern": "^[a-z]{2,3}(-[A-Za-z0-9]+)*$",
+          "title": "Original Language",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "publisher",
+        "url",
+        "accessed_at",
+        "original_language"
+      ],
+      "title": "RawSource",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "scenario_id": {
+      "pattern": "^raw-[0-9]{8}-[a-z0-9]{6,32}$",
+      "title": "Scenario Id",
+      "type": "string"
+    },
+    "title_ko": {
+      "maxLength": 1000,
+      "minLength": 1,
+      "title": "Title Ko",
+      "type": "string"
+    },
+    "status": {
+      "const": "validated",
+      "default": "validated",
+      "title": "Status",
+      "type": "string"
+    },
+    "source": {
+      "$ref": "#/$defs/RawSource"
+    },
+    "device": {
+      "$ref": "#/$defs/RawDevice"
+    },
+    "scenario": {
+      "$ref": "#/$defs/RawScenarioTaxonomy"
+    },
+    "method": {
+      "$ref": "#/$defs/RawMethod"
+    },
+    "rationale_ko": {
+      "items": {
+        "maxLength": 1000,
+        "minLength": 1,
+        "type": "string"
+      },
+      "maxItems": 32,
+      "minItems": 1,
+      "title": "Rationale Ko",
+      "type": "array"
+    },
+    "collection": {
+      "$ref": "#/$defs/RawCollection"
+    }
+  },
+  "required": [
+    "scenario_id",
+    "title_ko",
+    "source",
+    "device",
+    "scenario",
+    "method",
+    "rationale_ko",
+    "collection"
+  ],
+  "title": "RawScenario",
+  "type": "object"
+}

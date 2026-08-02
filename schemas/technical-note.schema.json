@@ -1,0 +1,144 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "technical_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[a-z0-9][a-z0-9-]*$",
+      "title": "Technical Id",
+      "type": "string"
+    },
+    "title_ko": {
+      "maxLength": 1000,
+      "minLength": 1,
+      "title": "Title Ko",
+      "type": "string"
+    },
+    "summary_ko": {
+      "maxLength": 1000,
+      "minLength": 1,
+      "title": "Summary Ko",
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "active",
+        "candidate",
+        "deprecated"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "supported_tools": {
+      "items": {
+        "enum": [
+          "remaster",
+          "lut",
+          "generate_ai"
+        ],
+        "type": "string"
+      },
+      "maxItems": 3,
+      "minItems": 1,
+      "title": "Supported Tools",
+      "type": "array"
+    },
+    "confidence": {
+      "maximum": 1,
+      "minimum": 0,
+      "title": "Confidence",
+      "type": "number"
+    },
+    "raw_scenario_ids": {
+      "items": {
+        "pattern": "^raw-[0-9]{8}-[a-z0-9]{6,32}$",
+        "type": "string"
+      },
+      "maxItems": 128,
+      "minItems": 1,
+      "title": "Raw Scenario Ids",
+      "type": "array"
+    },
+    "applicability_ko": {
+      "items": {
+        "maxLength": 1000,
+        "minLength": 1,
+        "type": "string"
+      },
+      "maxItems": 64,
+      "minItems": 1,
+      "title": "Applicability Ko",
+      "type": "array"
+    },
+    "procedure_ko": {
+      "items": {
+        "maxLength": 1000,
+        "minLength": 1,
+        "type": "string"
+      },
+      "maxItems": 64,
+      "minItems": 1,
+      "title": "Procedure Ko",
+      "type": "array"
+    },
+    "parameter_guidance_ko": {
+      "items": {
+        "maxLength": 1000,
+        "minLength": 1,
+        "type": "string"
+      },
+      "maxItems": 64,
+      "minItems": 1,
+      "title": "Parameter Guidance Ko",
+      "type": "array"
+    },
+    "rationale_ko": {
+      "items": {
+        "maxLength": 1000,
+        "minLength": 1,
+        "type": "string"
+      },
+      "maxItems": 64,
+      "minItems": 1,
+      "title": "Rationale Ko",
+      "type": "array"
+    },
+    "cautions_ko": {
+      "items": {
+        "maxLength": 1000,
+        "minLength": 1,
+        "type": "string"
+      },
+      "maxItems": 64,
+      "minItems": 1,
+      "title": "Cautions Ko",
+      "type": "array"
+    },
+    "conflicts_ko": {
+      "items": {
+        "maxLength": 1000,
+        "minLength": 1,
+        "type": "string"
+      },
+      "maxItems": 64,
+      "title": "Conflicts Ko",
+      "type": "array"
+    }
+  },
+  "required": [
+    "technical_id",
+    "title_ko",
+    "summary_ko",
+    "status",
+    "supported_tools",
+    "confidence",
+    "raw_scenario_ids",
+    "applicability_ko",
+    "procedure_ko",
+    "parameter_guidance_ko",
+    "rationale_ko",
+    "cautions_ko"
+  ],
+  "title": "TechnicalNoteSubmission",
+  "type": "object"
+}

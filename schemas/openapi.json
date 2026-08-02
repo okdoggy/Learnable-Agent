@@ -1,0 +1,1317 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "lala API",
+    "description": "Vibe Editing Tool 서버가 이미지 업로드와 Hermes LLM 기반 EditPlan 생성을 연동하기 위한 비동기 API입니다. 브라우저가 아니라 Vibe 서버에서 Bearer 인증으로 호출하세요. `upload request → signed PUT → edit request → status polling` 순서입니다.",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/v1/assets/upload-requests": {
+      "post": {
+        "tags": [
+          "Assets"
+        ],
+        "summary": "서명된 이미지 업로드 URL 발급",
+        "description": "파일 메타데이터를 먼저 등록합니다. 응답의 `upload_url`에 정확한 바이트와 Content-Type으로 PUT한 뒤 편집 요청을 생성하세요.",
+        "operationId": "createUploadRequest",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UploadRequestBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_UploadRequestData_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/assets/{asset_id}/content": {
+      "put": {
+        "tags": [
+          "Assets"
+        ],
+        "summary": "서명 URL로 이미지 업로드",
+        "description": "발급된 짧은 수명의 서명 URL 전용 엔드포인트입니다.",
+        "operationId": "uploadAssetContent",
+        "parameters": [
+          {
+            "name": "asset_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Asset Id"
+            }
+          },
+          {
+            "name": "expires",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "title": "Expires"
+            }
+          },
+          {
+            "name": "token",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 16,
+              "maxLength": 256,
+              "title": "Token"
+            }
+          },
+          {
+            "name": "content-type",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Content-Type"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_UploadStatusData_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/edit-requests": {
+      "post": {
+        "tags": [
+          "Edit requests"
+        ],
+        "summary": "Hermes LLM 편집 계획 생성 요청",
+        "description": "업로드 완료된 asset과 자연어 요청을 제출합니다. 즉시 202를 반환하며 `status_url`을 완료 또는 실패까지 polling합니다.",
+        "operationId": "createEditRequest",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EditRequestBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_EditAcceptedData_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/edit-requests/{request_id}": {
+      "get": {
+        "tags": [
+          "Edit requests"
+        ],
+        "summary": "편집 계획 상태 조회",
+        "description": "완료 시 실행 가능한 EditPlan 1.0과 한국어 판단 근거를 반환합니다.",
+        "operationId": "getEditRequest",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Request Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_EditStatusData_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/capabilities": {
+      "get": {
+        "tags": [
+          "Capabilities"
+        ],
+        "summary": "클라이언트 연동 계약 조회",
+        "operationId": "getCapabilities",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_ServiceCapabilitiesData_"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ApiError": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "message_ko": {
+            "type": "string",
+            "title": "Message Ko"
+          },
+          "retryable": {
+            "type": "boolean",
+            "title": "Retryable"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "code",
+          "message_ko",
+          "retryable"
+        ],
+        "title": "ApiError"
+      },
+      "ApiMeta": {
+        "properties": {
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "expires_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expires At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "created_at"
+        ],
+        "title": "ApiMeta"
+      },
+      "ClientCapabilitiesBody": {
+        "properties": {
+          "edit_plan_version": {
+            "type": "string",
+            "const": "1.0",
+            "title": "Edit Plan Version"
+          },
+          "remaster_engine_version": {
+            "type": "string",
+            "const": "1.0",
+            "title": "Remaster Engine Version"
+          },
+          "lut_catalog_version": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Lut Catalog Version"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "edit_plan_version",
+          "remaster_engine_version",
+          "lut_catalog_version"
+        ],
+        "title": "ClientCapabilitiesBody"
+      },
+      "EditAcceptedData": {
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "title": "Request Id"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "analyzing",
+              "completed",
+              "failed"
+            ],
+            "title": "Status"
+          },
+          "status_url": {
+            "type": "string",
+            "title": "Status Url"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "request_id",
+          "status",
+          "status_url"
+        ],
+        "title": "EditAcceptedData"
+      },
+      "EditPlan": {
+        "properties": {
+          "schema_version": {
+            "type": "string",
+            "const": "1.0",
+            "title": "Schema Version",
+            "default": "1.0"
+          },
+          "request_id": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 3,
+            "pattern": "^[a-zA-Z0-9._-]+$",
+            "title": "Request Id"
+          },
+          "summary_ko": {
+            "type": "string",
+            "maxLength": 4000,
+            "minLength": 1,
+            "pattern": "[가-힣]",
+            "title": "Summary Ko"
+          },
+          "steps": {
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/RemasterStep"
+                },
+                {
+                  "$ref": "#/components/schemas/LutStep"
+                },
+                {
+                  "$ref": "#/components/schemas/GenerateAIStep"
+                }
+              ],
+              "discriminator": {
+                "propertyName": "tool",
+                "mapping": {
+                  "generate_ai": "#/components/schemas/GenerateAIStep",
+                  "lut": "#/components/schemas/LutStep",
+                  "remaster": "#/components/schemas/RemasterStep"
+                }
+              }
+            },
+            "type": "array",
+            "maxItems": 16,
+            "minItems": 1,
+            "title": "Steps"
+          },
+          "overall_reason_ko": {
+            "type": "string",
+            "maxLength": 4000,
+            "minLength": 1,
+            "pattern": "[가-힣]",
+            "title": "Overall Reason Ko"
+          },
+          "confidence": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Confidence"
+          },
+          "warnings_ko": {
+            "items": {
+              "type": "string",
+              "maxLength": 1000,
+              "minLength": 1
+            },
+            "type": "array",
+            "maxItems": 32,
+            "title": "Warnings Ko"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "request_id",
+          "summary_ko",
+          "steps",
+          "overall_reason_ko",
+          "confidence"
+        ],
+        "title": "EditPlan"
+      },
+      "EditRequestBody": {
+        "properties": {
+          "schema_version": {
+            "type": "string",
+            "const": "1.0",
+            "title": "Schema Version",
+            "default": "1.0"
+          },
+          "client_request_id": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 8,
+            "pattern": "^[a-zA-Z0-9._-]+$",
+            "title": "Client Request Id"
+          },
+          "asset_id": {
+            "type": "string",
+            "pattern": "^asset_[0-9a-f]{32}$",
+            "title": "Asset Id"
+          },
+          "prompt": {
+            "type": "string",
+            "maxLength": 8000,
+            "minLength": 1,
+            "title": "Prompt",
+            "description": "Hermes LLM이 이미지 전체 맥락과 함께 해석할 자연어 편집 요청"
+          },
+          "locale": {
+            "type": "string",
+            "const": "ko-KR",
+            "title": "Locale",
+            "default": "ko-KR"
+          },
+          "client_capabilities": {
+            "$ref": "#/components/schemas/ClientCapabilitiesBody"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "client_request_id",
+          "asset_id",
+          "prompt",
+          "client_capabilities"
+        ],
+        "title": "EditRequestBody",
+        "examples": [
+          {
+            "asset_id": "asset_0123456789abcdef0123456789abcdef",
+            "client_capabilities": {
+              "edit_plan_version": "1.0",
+              "lut_catalog_version": "2026-08-02",
+              "remaster_engine_version": "1.0"
+            },
+            "client_request_id": "550e8400-e29b-41d4-a716-446655440000",
+            "locale": "ko-KR",
+            "prompt": "노을 분위기는 유지하고 얼굴만 자연스럽게 밝게 해줘",
+            "schema_version": "1.0"
+          }
+        ]
+      },
+      "EditStatusData": {
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "title": "Request Id"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "analyzing",
+              "completed",
+              "failed"
+            ],
+            "title": "Status"
+          },
+          "plan": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EditPlan"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "request_id",
+          "status"
+        ],
+        "title": "EditStatusData"
+      },
+      "Envelope_EditAcceptedData_": {
+        "properties": {
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EditAcceptedData"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "error": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ApiError"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ApiMeta"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "data",
+          "error",
+          "meta"
+        ],
+        "title": "Envelope[EditAcceptedData]"
+      },
+      "Envelope_EditStatusData_": {
+        "properties": {
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EditStatusData"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "error": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ApiError"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ApiMeta"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "data",
+          "error",
+          "meta"
+        ],
+        "title": "Envelope[EditStatusData]"
+      },
+      "Envelope_ServiceCapabilitiesData_": {
+        "properties": {
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ServiceCapabilitiesData"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "error": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ApiError"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ApiMeta"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "data",
+          "error",
+          "meta"
+        ],
+        "title": "Envelope[ServiceCapabilitiesData]"
+      },
+      "Envelope_UploadRequestData_": {
+        "properties": {
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UploadRequestData"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "error": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ApiError"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ApiMeta"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "data",
+          "error",
+          "meta"
+        ],
+        "title": "Envelope[UploadRequestData]"
+      },
+      "Envelope_UploadStatusData_": {
+        "properties": {
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UploadStatusData"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "error": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ApiError"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ApiMeta"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "data",
+          "error",
+          "meta"
+        ],
+        "title": "Envelope[UploadStatusData]"
+      },
+      "GenerateAIParameters": {
+        "properties": {
+          "operation": {
+            "type": "string",
+            "const": "edit",
+            "title": "Operation",
+            "default": "edit"
+          },
+          "use_case": {
+            "type": "string",
+            "enum": [
+              "text-localization",
+              "identity-preserve",
+              "precise-object-edit",
+              "lighting-weather",
+              "background-extraction",
+              "style-transfer",
+              "compositing",
+              "sketch-to-render"
+            ],
+            "title": "Use Case"
+          },
+          "execution_mode": {
+            "type": "string",
+            "const": "codex-imagegen-builtin",
+            "title": "Execution Mode",
+            "default": "codex-imagegen-builtin"
+          },
+          "prompt": {
+            "type": "string",
+            "maxLength": 16000,
+            "minLength": 1,
+            "title": "Prompt"
+          },
+          "constraints": {
+            "items": {
+              "type": "string",
+              "maxLength": 500,
+              "minLength": 1
+            },
+            "type": "array",
+            "maxItems": 32,
+            "title": "Constraints"
+          },
+          "avoid": {
+            "items": {
+              "type": "string",
+              "maxLength": 500,
+              "minLength": 1
+            },
+            "type": "array",
+            "maxItems": 32,
+            "title": "Avoid"
+          },
+          "output_format": {
+            "type": "string",
+            "const": "png",
+            "title": "Output Format",
+            "default": "png"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "use_case",
+          "prompt"
+        ],
+        "title": "GenerateAIParameters"
+      },
+      "GenerateAIStep": {
+        "properties": {
+          "order": {
+            "type": "integer",
+            "maximum": 16.0,
+            "minimum": 1.0,
+            "title": "Order"
+          },
+          "reason_ko": {
+            "type": "string",
+            "maxLength": 4000,
+            "minLength": 1,
+            "pattern": "[가-힣]",
+            "title": "Reason Ko"
+          },
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/SkillEvidence"
+            },
+            "type": "array",
+            "maxItems": 32,
+            "title": "Evidence"
+          },
+          "tool": {
+            "type": "string",
+            "const": "generate_ai",
+            "title": "Tool"
+          },
+          "parameters": {
+            "$ref": "#/components/schemas/GenerateAIParameters"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "order",
+          "reason_ko",
+          "tool",
+          "parameters"
+        ],
+        "title": "GenerateAIStep"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "LutParameters": {
+        "properties": {
+          "lut_id": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 3,
+            "pattern": "^[a-zA-Z0-9._-]+$",
+            "title": "Lut Id"
+          },
+          "strength": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Strength",
+            "default": 100
+          },
+          "interpolation": {
+            "type": "string",
+            "const": "trilinear",
+            "title": "Interpolation",
+            "default": "trilinear"
+          },
+          "preserve_luminance": {
+            "type": "boolean",
+            "title": "Preserve Luminance",
+            "default": true
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "lut_id"
+        ],
+        "title": "LutParameters"
+      },
+      "LutStep": {
+        "properties": {
+          "order": {
+            "type": "integer",
+            "maximum": 16.0,
+            "minimum": 1.0,
+            "title": "Order"
+          },
+          "reason_ko": {
+            "type": "string",
+            "maxLength": 4000,
+            "minLength": 1,
+            "pattern": "[가-힣]",
+            "title": "Reason Ko"
+          },
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/SkillEvidence"
+            },
+            "type": "array",
+            "maxItems": 32,
+            "title": "Evidence"
+          },
+          "tool": {
+            "type": "string",
+            "const": "lut",
+            "title": "Tool"
+          },
+          "parameters": {
+            "$ref": "#/components/schemas/LutParameters"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "order",
+          "reason_ko",
+          "tool",
+          "parameters"
+        ],
+        "title": "LutStep"
+      },
+      "RemasterParameters": {
+        "properties": {
+          "brightness": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": -100.0,
+            "title": "Brightness",
+            "default": 0
+          },
+          "contrast": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": -100.0,
+            "title": "Contrast",
+            "default": 0
+          },
+          "highlights": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": -100.0,
+            "title": "Highlights",
+            "default": 0
+          },
+          "shadows": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": -100.0,
+            "title": "Shadows",
+            "default": 0
+          },
+          "saturation": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": -100.0,
+            "title": "Saturation",
+            "default": 0
+          },
+          "temperature": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": -100.0,
+            "title": "Temperature",
+            "default": 0
+          },
+          "tint": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": -100.0,
+            "title": "Tint",
+            "default": 0
+          },
+          "sharpness": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Sharpness",
+            "default": 0
+          },
+          "denoise": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Denoise",
+            "default": 0
+          },
+          "vignette": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": -100.0,
+            "title": "Vignette",
+            "default": 0
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "RemasterParameters"
+      },
+      "RemasterStep": {
+        "properties": {
+          "order": {
+            "type": "integer",
+            "maximum": 16.0,
+            "minimum": 1.0,
+            "title": "Order"
+          },
+          "reason_ko": {
+            "type": "string",
+            "maxLength": 4000,
+            "minLength": 1,
+            "pattern": "[가-힣]",
+            "title": "Reason Ko"
+          },
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/SkillEvidence"
+            },
+            "type": "array",
+            "maxItems": 32,
+            "title": "Evidence"
+          },
+          "tool": {
+            "type": "string",
+            "const": "remaster",
+            "title": "Tool"
+          },
+          "parameters": {
+            "$ref": "#/components/schemas/RemasterParameters"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "order",
+          "reason_ko",
+          "tool",
+          "parameters"
+        ],
+        "title": "RemasterStep"
+      },
+      "ServiceCapabilitiesData": {
+        "properties": {
+          "planner": {
+            "type": "string",
+            "const": "hermes-llm",
+            "title": "Planner",
+            "default": "hermes-llm"
+          },
+          "edit_plan_versions": {
+            "items": {
+              "type": "string",
+              "const": "1.0"
+            },
+            "type": "array",
+            "title": "Edit Plan Versions",
+            "default": [
+              "1.0"
+            ]
+          },
+          "remaster_engine_versions": {
+            "items": {
+              "type": "string",
+              "const": "1.0"
+            },
+            "type": "array",
+            "title": "Remaster Engine Versions",
+            "default": [
+              "1.0"
+            ]
+          },
+          "imagegen_execution_modes": {
+            "items": {
+              "type": "string",
+              "const": "codex-imagegen-builtin"
+            },
+            "type": "array",
+            "title": "Imagegen Execution Modes",
+            "default": [
+              "codex-imagegen-builtin"
+            ]
+          },
+          "upload_mime_types": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "image/jpeg",
+                "image/png",
+                "image/webp"
+              ]
+            },
+            "type": "array",
+            "title": "Upload Mime Types",
+            "default": [
+              "image/jpeg",
+              "image/png",
+              "image/webp"
+            ]
+          },
+          "swagger_url": {
+            "type": "string",
+            "title": "Swagger Url",
+            "default": "/docs"
+          },
+          "redoc_url": {
+            "type": "string",
+            "title": "Redoc Url",
+            "default": "/redoc"
+          },
+          "openapi_url": {
+            "type": "string",
+            "title": "Openapi Url",
+            "default": "/openapi.json"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "ServiceCapabilitiesData"
+      },
+      "SkillEvidence": {
+        "properties": {
+          "skill_id": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 3,
+            "pattern": "^[a-zA-Z0-9._-]+$",
+            "title": "Skill Id"
+          },
+          "version": {
+            "type": "string",
+            "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)$",
+            "title": "Version"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "skill_id",
+          "version"
+        ],
+        "title": "SkillEvidence"
+      },
+      "UploadRequestBody": {
+        "properties": {
+          "filename": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Filename",
+            "description": "사용자가 업로드하는 원본 파일명"
+          },
+          "mime": {
+            "type": "string",
+            "enum": [
+              "image/jpeg",
+              "image/png",
+              "image/webp"
+            ],
+            "title": "Mime",
+            "description": "허용된 이미지 MIME"
+          },
+          "byte_size": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Byte Size",
+            "description": "업로드할 정확한 바이트 크기"
+          },
+          "sha256": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[0-9a-fA-F]{64}$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sha256",
+            "description": "선택적 원본 SHA-256"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "filename",
+          "mime",
+          "byte_size"
+        ],
+        "title": "UploadRequestBody",
+        "examples": [
+          {
+            "byte_size": 245760,
+            "filename": "portrait.png",
+            "mime": "image/png"
+          }
+        ]
+      },
+      "UploadRequestData": {
+        "properties": {
+          "asset_id": {
+            "type": "string",
+            "title": "Asset Id"
+          },
+          "upload_url": {
+            "type": "string",
+            "title": "Upload Url"
+          },
+          "upload_method": {
+            "type": "string",
+            "const": "PUT",
+            "title": "Upload Method",
+            "default": "PUT"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Expires At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "asset_id",
+          "upload_url",
+          "expires_at"
+        ],
+        "title": "UploadRequestData"
+      },
+      "UploadStatusData": {
+        "properties": {
+          "asset_id": {
+            "type": "string",
+            "title": "Asset Id"
+          },
+          "status": {
+            "type": "string",
+            "const": "uploaded",
+            "title": "Status"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "asset_id",
+          "status"
+        ],
+        "title": "UploadStatusData"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    },
+    "securitySchemes": {
+      "HTTPBearer": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Capabilities",
+      "description": "지원 계약과 문서 URL 조회"
+    },
+    {
+      "name": "Assets",
+      "description": "서명된 이미지 업로드"
+    },
+    {
+      "name": "Edit requests",
+      "description": "비동기 LLM 편집 계획 생성과 조회"
+    },
+    {
+      "name": "Operations",
+      "description": "서비스 상태와 관측성"
+    }
+  ]
+}

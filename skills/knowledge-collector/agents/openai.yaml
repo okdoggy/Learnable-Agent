@@ -1,0 +1,4 @@
+interface:
+  display_name: "Knowledge Collector"
+  short_description: "Hermes LLM이 전문가 자료를 탐색해 한국어 raw로 정리"
+  default_prompt: "Use $knowledge-collector to explore approved expert sources and write one Korean raw file per scenario."

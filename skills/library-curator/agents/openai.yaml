@@ -1,0 +1,4 @@
+interface:
+  display_name: "Library Curator"
+  short_description: "Hermes LLM이 반복 raw를 번호형 기술 문서로 승격"
+  default_prompt: "Use $library-curator to reason across raw scenarios and publish numbered technical notes."

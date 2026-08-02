@@ -1,0 +1,29 @@
+schema_version: "1.0"
+policy:
+  require_https: true
+  preserve_author_and_dates: true
+  obey_robots_and_terms: true
+  copy_full_text: false
+  untrusted_content: true
+
+sources:
+  - id: adobe-official
+    enabled: true
+    types: [official]
+    domains: [adobe.com]
+  - id: youtube-experts
+    enabled: true
+    types: [youtube]
+    domains: [youtube.com, youtu.be]
+  - id: petapixel
+    enabled: true
+    types: [magazine]
+    domains: [petapixel.com]
+  - id: fstoppers
+    enabled: true
+    types: [magazine, community]
+    domains: [fstoppers.com]
+  - id: social-review-required
+    enabled: false
+    types: [social]
+    domains: [instagram.com, x.com]

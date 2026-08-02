@@ -1,0 +1,46 @@
+schema_version: "1.0"
+edit_plan_version: "1.0"
+remaster_engine_version: "1.0.0"
+input_color_space: "sRGB"
+working_color_space: "linear-sRGB"
+parameters:
+  brightness:
+    range: [-100, 100]
+    default: 0
+    mapping: "linear RGB exposure gain = 2 ** (value / 50)"
+  contrast:
+    range: [-100, 100]
+    default: 0
+    mapping: "linear RGB pivot 0.18, factor = 2 ** (value / 60)"
+  highlights:
+    range: [-100, 100]
+    default: 0
+    mapping: "luminance-weighted highlight delta, maximum magnitude 0.32"
+  shadows:
+    range: [-100, 100]
+    default: 0
+    mapping: "luminance-weighted shadow delta, maximum magnitude 0.32"
+  saturation:
+    range: [-100, 100]
+    default: 0
+    mapping: "linear RGB luminance blend, factor = max(0, 1 + value / 100)"
+  temperature:
+    range: [-100, 100]
+    default: 0
+    mapping: "bounded red/blue channel gain, maximum delta 0.12"
+  tint:
+    range: [-100, 100]
+    default: 0
+    mapping: "bounded green/magenta channel gain, maximum delta 0.10"
+  sharpness:
+    range: [0, 100]
+    default: 0
+    mapping: "Pillow UnsharpMask after tone/color operations"
+  denoise:
+    range: [0, 100]
+    default: 0
+    mapping: "bounded Gaussian blur blended by value / 100"
+  vignette:
+    range: [-100, 100]
+    default: 0
+    mapping: "radial linear RGB edge gain, maximum magnitude 0.55"

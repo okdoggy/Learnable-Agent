@@ -1,0 +1,416 @@
+{
+  "$defs": {
+    "GenerateAIParameters": {
+      "additionalProperties": false,
+      "properties": {
+        "operation": {
+          "const": "edit",
+          "default": "edit",
+          "title": "Operation",
+          "type": "string"
+        },
+        "use_case": {
+          "enum": [
+            "text-localization",
+            "identity-preserve",
+            "precise-object-edit",
+            "lighting-weather",
+            "background-extraction",
+            "style-transfer",
+            "compositing",
+            "sketch-to-render"
+          ],
+          "title": "Use Case",
+          "type": "string"
+        },
+        "execution_mode": {
+          "const": "codex-imagegen-builtin",
+          "default": "codex-imagegen-builtin",
+          "title": "Execution Mode",
+          "type": "string"
+        },
+        "prompt": {
+          "maxLength": 16000,
+          "minLength": 1,
+          "title": "Prompt",
+          "type": "string"
+        },
+        "constraints": {
+          "items": {
+            "maxLength": 500,
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 32,
+          "title": "Constraints",
+          "type": "array"
+        },
+        "avoid": {
+          "items": {
+            "maxLength": 500,
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 32,
+          "title": "Avoid",
+          "type": "array"
+        },
+        "output_format": {
+          "const": "png",
+          "default": "png",
+          "title": "Output Format",
+          "type": "string"
+        }
+      },
+      "required": [
+        "use_case",
+        "prompt"
+      ],
+      "title": "GenerateAIParameters",
+      "type": "object"
+    },
+    "GenerateAIStep": {
+      "additionalProperties": false,
+      "properties": {
+        "order": {
+          "maximum": 16,
+          "minimum": 1,
+          "title": "Order",
+          "type": "integer"
+        },
+        "reason_ko": {
+          "maxLength": 4000,
+          "minLength": 1,
+          "pattern": "[가-힣]",
+          "title": "Reason Ko",
+          "type": "string"
+        },
+        "evidence": {
+          "items": {
+            "$ref": "#/$defs/SkillEvidence"
+          },
+          "maxItems": 32,
+          "title": "Evidence",
+          "type": "array"
+        },
+        "tool": {
+          "const": "generate_ai",
+          "title": "Tool",
+          "type": "string"
+        },
+        "parameters": {
+          "$ref": "#/$defs/GenerateAIParameters"
+        }
+      },
+      "required": [
+        "order",
+        "reason_ko",
+        "tool",
+        "parameters"
+      ],
+      "title": "GenerateAIStep",
+      "type": "object"
+    },
+    "LutParameters": {
+      "additionalProperties": false,
+      "properties": {
+        "lut_id": {
+          "maxLength": 128,
+          "minLength": 3,
+          "pattern": "^[a-zA-Z0-9._-]+$",
+          "title": "Lut Id",
+          "type": "string"
+        },
+        "strength": {
+          "default": 100,
+          "maximum": 100,
+          "minimum": 0,
+          "title": "Strength",
+          "type": "integer"
+        },
+        "interpolation": {
+          "const": "trilinear",
+          "default": "trilinear",
+          "title": "Interpolation",
+          "type": "string"
+        },
+        "preserve_luminance": {
+          "default": true,
+          "title": "Preserve Luminance",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "lut_id"
+      ],
+      "title": "LutParameters",
+      "type": "object"
+    },
+    "LutStep": {
+      "additionalProperties": false,
+      "properties": {
+        "order": {
+          "maximum": 16,
+          "minimum": 1,
+          "title": "Order",
+          "type": "integer"
+        },
+        "reason_ko": {
+          "maxLength": 4000,
+          "minLength": 1,
+          "pattern": "[가-힣]",
+          "title": "Reason Ko",
+          "type": "string"
+        },
+        "evidence": {
+          "items": {
+            "$ref": "#/$defs/SkillEvidence"
+          },
+          "maxItems": 32,
+          "title": "Evidence",
+          "type": "array"
+        },
+        "tool": {
+          "const": "lut",
+          "title": "Tool",
+          "type": "string"
+        },
+        "parameters": {
+          "$ref": "#/$defs/LutParameters"
+        }
+      },
+      "required": [
+        "order",
+        "reason_ko",
+        "tool",
+        "parameters"
+      ],
+      "title": "LutStep",
+      "type": "object"
+    },
+    "RemasterParameters": {
+      "additionalProperties": false,
+      "properties": {
+        "brightness": {
+          "default": 0,
+          "maximum": 100,
+          "minimum": -100,
+          "title": "Brightness",
+          "type": "integer"
+        },
+        "contrast": {
+          "default": 0,
+          "maximum": 100,
+          "minimum": -100,
+          "title": "Contrast",
+          "type": "integer"
+        },
+        "highlights": {
+          "default": 0,
+          "maximum": 100,
+          "minimum": -100,
+          "title": "Highlights",
+          "type": "integer"
+        },
+        "shadows": {
+          "default": 0,
+          "maximum": 100,
+          "minimum": -100,
+          "title": "Shadows",
+          "type": "integer"
+        },
+        "saturation": {
+          "default": 0,
+          "maximum": 100,
+          "minimum": -100,
+          "title": "Saturation",
+          "type": "integer"
+        },
+        "temperature": {
+          "default": 0,
+          "maximum": 100,
+          "minimum": -100,
+          "title": "Temperature",
+          "type": "integer"
+        },
+        "tint": {
+          "default": 0,
+          "maximum": 100,
+          "minimum": -100,
+          "title": "Tint",
+          "type": "integer"
+        },
+        "sharpness": {
+          "default": 0,
+          "maximum": 100,
+          "minimum": 0,
+          "title": "Sharpness",
+          "type": "integer"
+        },
+        "denoise": {
+          "default": 0,
+          "maximum": 100,
+          "minimum": 0,
+          "title": "Denoise",
+          "type": "integer"
+        },
+        "vignette": {
+          "default": 0,
+          "maximum": 100,
+          "minimum": -100,
+          "title": "Vignette",
+          "type": "integer"
+        }
+      },
+      "title": "RemasterParameters",
+      "type": "object"
+    },
+    "RemasterStep": {
+      "additionalProperties": false,
+      "properties": {
+        "order": {
+          "maximum": 16,
+          "minimum": 1,
+          "title": "Order",
+          "type": "integer"
+        },
+        "reason_ko": {
+          "maxLength": 4000,
+          "minLength": 1,
+          "pattern": "[가-힣]",
+          "title": "Reason Ko",
+          "type": "string"
+        },
+        "evidence": {
+          "items": {
+            "$ref": "#/$defs/SkillEvidence"
+          },
+          "maxItems": 32,
+          "title": "Evidence",
+          "type": "array"
+        },
+        "tool": {
+          "const": "remaster",
+          "title": "Tool",
+          "type": "string"
+        },
+        "parameters": {
+          "$ref": "#/$defs/RemasterParameters"
+        }
+      },
+      "required": [
+        "order",
+        "reason_ko",
+        "tool",
+        "parameters"
+      ],
+      "title": "RemasterStep",
+      "type": "object"
+    },
+    "SkillEvidence": {
+      "additionalProperties": false,
+      "properties": {
+        "skill_id": {
+          "maxLength": 128,
+          "minLength": 3,
+          "pattern": "^[a-zA-Z0-9._-]+$",
+          "title": "Skill Id",
+          "type": "string"
+        },
+        "version": {
+          "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)$",
+          "title": "Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "skill_id",
+        "version"
+      ],
+      "title": "SkillEvidence",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "request_id": {
+      "maxLength": 128,
+      "minLength": 3,
+      "pattern": "^[a-zA-Z0-9._-]+$",
+      "title": "Request Id",
+      "type": "string"
+    },
+    "summary_ko": {
+      "maxLength": 4000,
+      "minLength": 1,
+      "pattern": "[가-힣]",
+      "title": "Summary Ko",
+      "type": "string"
+    },
+    "steps": {
+      "items": {
+        "discriminator": {
+          "mapping": {
+            "generate_ai": "#/$defs/GenerateAIStep",
+            "lut": "#/$defs/LutStep",
+            "remaster": "#/$defs/RemasterStep"
+          },
+          "propertyName": "tool"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/$defs/RemasterStep"
+          },
+          {
+            "$ref": "#/$defs/LutStep"
+          },
+          {
+            "$ref": "#/$defs/GenerateAIStep"
+          }
+        ]
+      },
+      "maxItems": 16,
+      "minItems": 1,
+      "title": "Steps",
+      "type": "array"
+    },
+    "overall_reason_ko": {
+      "maxLength": 4000,
+      "minLength": 1,
+      "pattern": "[가-힣]",
+      "title": "Overall Reason Ko",
+      "type": "string"
+    },
+    "confidence": {
+      "maximum": 1,
+      "minimum": 0,
+      "title": "Confidence",
+      "type": "number"
+    },
+    "warnings_ko": {
+      "items": {
+        "maxLength": 1000,
+        "minLength": 1,
+        "type": "string"
+      },
+      "maxItems": 32,
+      "title": "Warnings Ko",
+      "type": "array"
+    }
+  },
+  "required": [
+    "request_id",
+    "summary_ko",
+    "steps",
+    "overall_reason_ko",
+    "confidence"
+  ],
+  "title": "EditPlan",
+  "type": "object"
+}

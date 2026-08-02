@@ -1,0 +1,4 @@
+schema_version: "1.0"
+catalog_version: "2026-08-02"
+# 운영 LUT는 출처·라이선스·SHA-256 검토 후 status: approved로 등록합니다.
+luts: []

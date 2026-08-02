@@ -1,0 +1,53 @@
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[project]
+name = "learnable-agent"
+version = "0.1.0"
+description = "lala: a Hermes-based image editing recommendation and execution service"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "Proprietary" }
+dependencies = [
+  "fastapi>=0.116,<1",
+  "httpx>=0.28,<1",
+  "mcp>=1.12,<2",
+  "numpy>=2.0,<3",
+  "pillow>=11.0,<13",
+  "pydantic>=2.10,<3",
+  "python-dotenv>=1.0,<2",
+  "python-multipart>=0.0.20,<1",
+  "pyyaml>=6.0,<7",
+  "uvicorn[standard]>=0.35,<1",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.3,<9",
+  "pytest-asyncio>=0.25,<2",
+  "pytest-cov>=6,<8",
+  "ruff>=0.12,<1",
+]
+
+[project.scripts]
+lala-api = "lala.api.app:main"
+lala-mcp = "lala.mcp.server:main"
+lala-cleanup = "lala.storage.cleanup:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/lala"]
+
+[tool.pytest.ini_options]
+addopts = "-ra --strict-markers"
+testpaths = ["tests"]
+pythonpath = ["src"]
+markers = ["live: opt-in tests that call paid external services"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM"]
+ignore = ["B008"]

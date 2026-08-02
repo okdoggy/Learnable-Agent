@@ -1,0 +1,65 @@
+# ~/.hermes/config.yaml에 필요한 항목을 병합하세요.
+skills:
+  external_dirs:
+    - "${LALA_PROJECT_ROOT}/skills"
+  # 반복 사용에서 coordinator/collector/curator 프롬프트를 스스로 개선한다.
+  # 모든 변경을 사전 검토하려는 환경에서는 true로 전환한다.
+  write_approval: false
+
+mcp_servers:
+  lala-tools:
+    command: "uv"
+    args: ["--directory", "${LALA_PROJECT_ROOT}", "run", "lala-mcp"]
+    env:
+      LALA_PROJECT_ROOT: "${LALA_PROJECT_ROOT}"
+      LALA_VAR_DIR: "${LALA_VAR_DIR}"
+      LALA_RAW_DIR: "${LALA_RAW_DIR}"
+      LALA_TECHNICAL_LIBRARY_DIR: "${LALA_TECHNICAL_LIBRARY_DIR}"
+      LALA_OUTPUT_DIR: "${LALA_OUTPUT_DIR}"
+      LALA_CODEX_EXECUTABLE: "${LALA_CODEX_EXECUTABLE}"
+    timeout: 600
+    connect_timeout: 20
+    supports_parallel_tool_calls: false
+    tools:
+      include:
+        - inspect_image
+        - validate_edit_plan
+        - apply_remaster
+        - apply_lut
+        - apply_generate_ai
+        - list_raw_scenarios
+        - read_raw_scenario
+        - write_raw_scenario
+        - list_technical_notes
+        - read_technical_note
+        - publish_technical_note
+      prompts: false
+      resources: false
+
+group_sessions_per_user: true
+unauthorized_dm_behavior: "ignore"
+
+slack:
+  require_mention: true
+  strict_mention: true
+  unauthorized_dm_behavior: "ignore"
+  # 실제 채널 ID로 교체하세요. 이 placeholder는 기본적으로 모든 실제 채널을 차단합니다.
+  allowed_channels: ["C0000000000"]
+
+platforms:
+  slack:
+    reply_to_mode: "first"
+    typing_status_text: "이미지를 분석하고 있어요…"
+    extra:
+      reply_in_thread: true
+      reply_broadcast: false
+      allow_bots: "none"
+      rich_blocks: true
+
+# API server 비밀과 Slack 토큰/사용자 allowlist는 ~/.hermes/.env에 둡니다.
+# API_SERVER_ENABLED=true
+# API_SERVER_KEY=...
+# SLACK_BOT_TOKEN=xoxb-...
+# SLACK_APP_TOKEN=xapp-...
+# SLACK_ALLOWED_USERS=U0000000000
+# TZ=Asia/Seoul

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Lala Coordinator"
+  short_description: "LLM이 이미지 맥락을 판단해 편집 계획과 실행을 연결"
+  default_prompt: "Use $lala-coordinator to reason over this image request and return a validated edit plan."

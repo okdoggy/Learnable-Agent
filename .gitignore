@@ -1,0 +1,15 @@
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+dist/
+.env
+*.sqlite3
+var/*
+!var/.gitkeep
+output/imagegen/*
+!output/imagegen/.gitkeep
+tmp/
