@@ -12,3 +12,6 @@
 - `certainty_ko`: 출처가 직접 뒷받침한 내용과 LLM의 해석 범위
 
 원문 전체를 복제하지 않고 URL, 작성자·게시자, 게시일, 접근일, 원문 언어를 보존한다. 모든 텍스트는 UTF-8로 전달한다.
+
+발행은 반드시 `write_raw_scenario`로 수행한다. 최종 Markdown 위치는 프로젝트의
+`<LALA_PROJECT_ROOT>/raw/YYYYMMDD/`이며 Hermes 세션 또는 임시 작업 폴더는 최종 저장소가 아니다.

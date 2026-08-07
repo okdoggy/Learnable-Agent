@@ -110,10 +110,7 @@ class RawScenarioStore:
         url_hash = hashlib.sha256(canonical_url.encode()).hexdigest()
         collected_kst = scenario.collection.collected_at.astimezone(ZoneInfo("Asia/Seoul"))
         directory = ensure_within(
-            self.root
-            / f"{collected_kst.year:04d}"
-            / f"{collected_kst.month:02d}"
-            / f"{collected_kst.day:02d}",
+            self.root / collected_kst.strftime("%Y%m%d"),
             self.root,
         )
         stem = "-".join(
@@ -173,7 +170,7 @@ class RawScenarioStore:
 
     def list_documents(self) -> list[tuple[Path, RawScenario]]:
         documents: list[tuple[Path, RawScenario]] = []
-        for path in sorted(self.root.glob("*/*/*/*.md")):
+        for path in sorted(self.root.glob("*/*.md")):
             try:
                 metadata, _ = read_frontmatter(path)
                 scenario = RawScenario.model_validate(metadata)

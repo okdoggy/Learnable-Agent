@@ -146,6 +146,9 @@ def test_raw_store_is_append_only_one_scenario_and_utf8(settings: Settings) -> N
     assert first.duplicate is False
     assert second.duplicate is True
     assert first.path == second.path
+    assert first.path.is_relative_to(settings.project_root / "raw")
+    assert first.path.parent == settings.project_root / "raw" / "20260802"
+    assert store.list_documents()[0][0] == first.path.resolve()
     assert content.count("이 문서는 하나의 촬영·보정 시나리오만 다룬다.") == 1
     assert "## 촬영/작업 순서" in content
     assert "## 주의할 점" in content
@@ -241,6 +244,7 @@ def test_hermes_authored_technical_note_is_numbered_and_versioned(settings: Sett
     active = repository.list_notes(status="active")
 
     assert active_result.path == candidate.path
+    assert active_result.path.parent == settings.project_root / "technical-library"
     assert active_result.version == "1.0.0"
     assert len(active) == 1
     assert "raw-20260802-abc123" in active[0].content
