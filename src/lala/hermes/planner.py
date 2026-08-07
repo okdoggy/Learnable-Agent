@@ -59,10 +59,19 @@ class HermesResponsesPlanner:
     ) -> EditPlan:
         prompt_template = _read_utf8_prompt(self.settings.planner_prompt_path)
         prompt_sha256 = hashlib.sha256(prompt_template.encode("utf-8")).hexdigest()
+        calibration_registry = _read_utf8_prompt(self.settings.parameter_registry_path)
+        calibration_registry_sha256 = hashlib.sha256(
+            calibration_registry.encode("utf-8")
+        ).hexdigest()
         audit_event(
             "planner_prompt_loaded",
             request_id=request_id,
             planner_prompt_sha256=prompt_sha256,
+        )
+        audit_event(
+            "calibration_registry_loaded",
+            request_id=request_id,
+            calibration_registry_sha256=calibration_registry_sha256,
         )
         image_data = base64.b64encode(image_path.read_bytes()).decode("ascii")
         schema = EditPlan.model_json_schema()
@@ -89,12 +98,16 @@ class HermesResponsesPlanner:
                 f"planner_prompt_sha256={prompt_sha256}",
                 f"사용자 요청: {prompt}",
                 f"이미지 정량 분석: {inspection.model_dump_json()}",
+                "renderer capability 및 parameter calibration registry:",
+                calibration_registry,
                 "실제로 읽을 수 있도록 제공된 active technical library 문서 전문:",
                 json.dumps(active_notes, ensure_ascii=False, separators=(",", ":")),
                 (
                     "이미지와 전체 문맥을 의미적으로 해석하라. 단어 포함 여부, 정규식, "
-                    "동의어 표 또는 점수 규칙으로 도구나 파라미터를 고르지 마라. 위에 전문이 "
-                    "제공된 active 문서만 근거로 선택하고 ID와 version을 정확히 기록하라."
+                    "동의어 표 또는 점수 규칙으로 도구나 파라미터를 고르지 마라. registry의 "
+                    "capability 한계와 파라미터 상호작용을 먼저 확인하되 고정 프리셋으로 사용하지 "
+                    "마라. 위에 전문이 제공된 active 문서만 근거로 선택하고 ID와 version을 정확히 "
+                    "기록하라."
                 ),
             ]
         )
@@ -190,6 +203,7 @@ class HermesResponsesPlanner:
         if last_error is None:  # pragma: no cover - defensive guard
             last_error = LalaError("AGENT_ERROR", "추천 Agent 호출에 실패했습니다.", True)
         raise last_error
+
 
 
 def build_planner(settings: Settings) -> Planner:

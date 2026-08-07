@@ -1,4 +1,5 @@
 schema_version: "1.0"
+calibration_version: "1.0.0"
 edit_plan_version: "1.0"
 remaster_engine_version: "1.0.0"
 input_color_space: "sRGB"
@@ -44,3 +45,63 @@ parameters:
     range: [-100, 100]
     default: 0
     mapping: "radial linear RGB edge gain, maximum magnitude 0.55"
+
+capabilities:
+  remaster:
+    scope: "global"
+    supports:
+      - "global-linear-tone-and-color"
+      - "global-gaussian-denoise"
+      - "global-unsharp-mask"
+      - "global-radial-vignette"
+    unsupported:
+      - "semantic-local-masks"
+      - "subject-background-independent-adjustment"
+      - "skin-protected-edge-only-sharpening"
+      - "local-warm-cool-separation"
+  lut:
+    scope: "global"
+    supports: ["approved-global-color-transform"]
+    unsupported: ["semantic-local-masks", "object-local-color-transform"]
+  generate_ai:
+    scope: "semantic-generative-edit"
+    engine:
+      provider: "openai-image-api"
+      model: "gpt-image-2"
+      quality: "low"
+      sizes: ["1024x1024", "1536x1024", "1024x1536"]
+      output_format: "png"
+    supports:
+      - "identity-preserve"
+      - "precise-object-edit"
+      - "lighting-weather"
+      - "background-extraction"
+      - "style-transfer"
+      - "compositing"
+      - "sketch-to-render"
+    caution: "보존 조건에도 미세한 픽셀 재구성이 발생할 수 있다."
+calibration:
+  principles:
+    - "이미지와 사용자 의도의 전체 문맥으로 판단하며 registry를 키워드 프리셋으로 사용하지 않는다."
+    - "보수적 출발 범위에서 시작하고 여러 파라미터의 누적 효과를 고려한다."
+    - "범위를 벗어날 수 있지만 이미지 정량 분석과 구체적 이유를 plan에 남긴다."
+  remaster_conservative_start_ranges:
+    brightness: [-2, 2]
+    contrast: [-3, 3]
+    highlights: [-5, 5]
+    shadows: [-5, 5]
+    saturation: [-3, 3]
+    temperature: [-3, 3]
+    tint: [-2, 2]
+    sharpness: [0, 3]
+    denoise: [0, 3]
+    vignette: [-3, 3]
+  known_interactions:
+    - "brightness와 양의 shadows는 암부·배경을 함께 누적 상승시켜 검정점과 깊이를 약화할 수 있다."
+    - "음의 highlights와 양의 shadows를 함께 높이면 clipping 없이도 전역 대비가 평평해질 수 있다."
+    - "denoise와 sharpness는 모두 전역이며 피부 보호 또는 에지 마스크를 구현하지 않는다."
+    - "temperature와 tint는 피사체와 배경에 동일한 channel gain을 적용한다."
+  offline_review:
+    schedule: "0 12 * * * UTC (21:00 Asia/Seoul)"
+    runtime_before_after_quality_gate: false
+    production_auto_update: false

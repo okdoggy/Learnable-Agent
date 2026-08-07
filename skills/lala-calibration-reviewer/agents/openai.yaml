@@ -1,0 +1,4 @@
+interface:
+  display_name: "Lala Calibration Reviewer"
+  short_description: "Slack 편집 세션에서 capability·parameter calibration 후보를 야간 검토"
+  default_prompt: "Use $lala-calibration-reviewer to review recent image-editing sessions offline."

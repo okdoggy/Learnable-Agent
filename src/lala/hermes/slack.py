@@ -38,7 +38,7 @@ class SlackCoordinator:
         self.executor = executor
         self.workspaces = workspaces
 
-    def handle(self, *, request_id: str, prompt: str) -> SlackResponse:
+    def handle(self, *, request_id: str, prompt: str, execute: bool = True) -> SlackResponse:
         started = time.monotonic()
         image_path = self.workspaces.require_input(request_id)
         inspection = inspect_image(image_path)
@@ -49,6 +49,16 @@ class SlackCoordinator:
             inspection=inspection,
         )
         plan = self.validator.validate(plan)
+        if not execute:
+            METRICS.increment("lala_edit_requests_total", channel="slack", status="recommended")
+            audit_event(
+                "edit_request_recommended",
+                request_id=request_id,
+                channel="slack",
+                tools=[step.tool for step in plan.steps],
+                latency_ms=round((time.monotonic() - started) * 1000, 2),
+            )
+            return SlackResponse(request_id, plan, format_slack_plan(plan), None)
         try:
             report = self.executor.execute(plan)
         except LalaError as exc:
@@ -66,6 +76,9 @@ class SlackCoordinator:
             )
         else:
             message = format_slack_plan(plan)
+            for step in report.steps:
+                if step.tool == "generate_ai" and step.renderer_size:
+                    message += f"\n\n실행 설정\n- Generate AI 출력 크기: {step.renderer_size}"
             message += f"\n\n결과 이미지\n{report.final_path}"
             METRICS.increment("lala_edit_requests_total", channel="slack", status="completed")
             audit_event(
@@ -143,7 +156,7 @@ def format_slack_plan(plan: EditPlan) -> str:
                     f"- 요청: {step.parameters.prompt}",
                 ]
             )
-    lines.extend(["", "추천 이유", plan.overall_reason_ko, "", "근거"])
+    lines.extend(["", "추천 이유", plan.overall_reason_ko, "", "참고한 technical-library"])
     evidence = {(item.skill_id, item.version) for step in plan.steps for item in step.evidence}
     if evidence:
         lines.extend(
@@ -151,7 +164,7 @@ def format_slack_plan(plan: EditPlan) -> str:
             for technical_id, version in sorted(evidence)
         )
     else:
-        lines.append("- 근거 스킬 없음")
+        lines.append("- 현재 요청에 적용 가능한 active technical-library 문서 없음")
     if plan.warnings_ko:
         lines.extend(["", "주의", *[f"- {warning}" for warning in plan.warnings_ko]])
     return "\n".join(lines)

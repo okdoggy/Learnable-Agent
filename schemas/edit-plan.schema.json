@@ -24,8 +24,8 @@
           "type": "string"
         },
         "execution_mode": {
-          "const": "codex-imagegen-builtin",
-          "default": "codex-imagegen-builtin",
+          "const": "openai-image-api",
+          "default": "openai-image-api",
           "title": "Execution Mode",
           "type": "string"
         },

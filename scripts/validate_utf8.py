@@ -4,7 +4,15 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 TEXT_SUFFIXES = {".json", ".md", ".py", ".sh", ".toml", ".ts", ".yaml", ".yml"}
-IGNORED_PARTS = {".git", ".mypy_cache", ".pytest_cache", ".ruff_cache", ".venv", "dist"}
+IGNORED_PARTS = {
+    ".git",
+    ".mypy_cache",
+    ".pytest_cache",
+    ".ruff_cache",
+    ".uv-cache",
+    ".venv",
+    "dist",
+}
 
 
 def main() -> None:

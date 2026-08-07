@@ -14,3 +14,8 @@
 - `cautions_ko`, `conflicts_ko`: 실패 조건, 예외, 상충 근거
 
 파일 번호, source URL, semantic version은 `publish_technical_note`가 검증된 raw 근거에서 계산한다. 출력은 UTF-8 Markdown이며 파일명은 `001-xxxx.md` 형식이다.
+
+중요도와 필수 기술화 여부는 Hermes LLM이 raw와 기존 technical 문서의 전체 문맥으로 판단한다.
+필수 기술화 대상인데 독립 근거가 부족한 경우 누락하지 말고 `candidate`로 발행한다. 충분한 독립
+근거가 있을 때만 `active`로 발행한다. 최종 파일은 반드시 프로젝트의
+`<LALA_PROJECT_ROOT>/technical-library/` 아래에 있어야 한다.

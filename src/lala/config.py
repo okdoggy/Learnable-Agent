@@ -19,6 +19,7 @@ class Settings:
     project_root: Path
     var_dir: Path
     output_dir: Path
+    slack_cache_dir: Path
     raw_dir: Path
     technical_library_dir: Path
     lut_manifest_path: Path
@@ -28,6 +29,7 @@ class Settings:
     signing_secret: str
     public_base_url: str
     planner_prompt_path: Path
+    parameter_registry_path: Path
     max_asset_bytes: int = 25 * 1024 * 1024
     max_image_pixels: int = 40_000_000
     asset_ttl_seconds: int = 86_400
@@ -39,7 +41,10 @@ class Settings:
     hermes_max_attempts: int = 3
     hermes_circuit_failures: int = 5
     hermes_circuit_recovery_seconds: int = 30
-    codex_executable: str = "codex"
+    imagegen_openai_api_key: str = ""
+    imagegen_model: str = "gpt-image-2"
+    imagegen_quality: str = "low"
+    imagegen_size: str = "1024x1024"
     imagegen_timeout_seconds: int = 180
     imagegen_max_attempts: int = 3
     imagegen_max_calls_per_hour: int = 20
@@ -58,12 +63,13 @@ class Settings:
         root = root.expanduser().resolve()
         var_dir = Path(os.getenv("LALA_VAR_DIR", str(root / "var"))).expanduser().resolve()
         output_dir = Path(os.getenv("LALA_OUTPUT_DIR", str(root / "output"))).expanduser().resolve()
-        raw_dir = Path(os.getenv("LALA_RAW_DIR", str(root / "raw"))).expanduser().resolve()
-        technical_dir = (
-            Path(os.getenv("LALA_TECHNICAL_LIBRARY_DIR", str(root / "technical-library")))
-            .expanduser()
-            .resolve()
-        )
+        slack_cache_dir = Path(
+            os.getenv("LALA_SLACK_CACHE_DIR", str(root / "var" / "slack-cache"))
+        ).expanduser().resolve()
+        # 수집 지식은 Hermes의 세션/임시 작업공간과 분리된 프로젝트 자산이다.
+        # 외부 환경변수로 이 두 경로를 덮어쓰지 않고 프로젝트 루트에 고정한다.
+        raw_dir = (root / "raw").resolve()
+        technical_dir = (root / "technical-library").resolve()
         planner_prompt_path = (
             Path(
                 os.getenv(
@@ -80,6 +86,7 @@ class Settings:
             project_root=root,
             var_dir=var_dir,
             output_dir=output_dir,
+            slack_cache_dir=slack_cache_dir,
             raw_dir=raw_dir,
             technical_library_dir=technical_dir,
             lut_manifest_path=Path(
@@ -106,11 +113,15 @@ class Settings:
             hermes_api_key=os.getenv("HERMES_API_KEY", ""),
             hermes_model=os.getenv("HERMES_MODEL", "hermes-agent"),
             planner_prompt_path=planner_prompt_path,
+            parameter_registry_path=(root / "config" / "parameter-registry.yaml").resolve(),
             hermes_timeout_seconds=float(os.getenv("HERMES_TIMEOUT_SECONDS", 120)),
             hermes_max_attempts=int(os.getenv("HERMES_MAX_ATTEMPTS", 3)),
             hermes_circuit_failures=int(os.getenv("HERMES_CIRCUIT_FAILURES", 5)),
             hermes_circuit_recovery_seconds=int(os.getenv("HERMES_CIRCUIT_RECOVERY_SECONDS", 30)),
-            codex_executable=os.getenv("LALA_CODEX_EXECUTABLE", "codex"),
+            imagegen_openai_api_key=os.getenv("LALA_IMAGEGEN_OPENAI_API_KEY", ""),
+            imagegen_model="gpt-image-2",
+            imagegen_quality="low",
+            imagegen_size="1024x1024",
             imagegen_timeout_seconds=int(os.getenv("LALA_IMAGEGEN_TIMEOUT_SECONDS", 180)),
             imagegen_max_attempts=int(os.getenv("LALA_IMAGEGEN_MAX_ATTEMPTS", 3)),
             imagegen_max_calls_per_hour=int(os.getenv("LALA_IMAGEGEN_MAX_CALLS_PER_HOUR", 20)),

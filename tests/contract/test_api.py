@@ -77,7 +77,7 @@ def test_vibe_interactive_documentation_and_capabilities(settings: Settings) -> 
     response = client.get("/v1/capabilities", headers=AUTH)
     assert response.status_code == 200
     assert response.json()["data"]["planner"] == "hermes-llm"
-    assert response.json()["data"]["imagegen_execution_modes"] == ["codex-imagegen-builtin"]
+    assert response.json()["data"]["imagegen_execution_modes"] == ["openai-image-api"]
 
 
 def test_async_edit_contract_completes_with_valid_plan(

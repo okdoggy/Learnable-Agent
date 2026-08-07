@@ -745,9 +745,9 @@
           },
           "execution_mode": {
             "type": "string",
-            "const": "codex-imagegen-builtin",
+            "const": "openai-image-api",
             "title": "Execution Mode",
-            "default": "codex-imagegen-builtin"
+            "default": "openai-image-api"
           },
           "prompt": {
             "type": "string",
@@ -1074,12 +1074,12 @@
           "imagegen_execution_modes": {
             "items": {
               "type": "string",
-              "const": "codex-imagegen-builtin"
+              "const": "openai-image-api"
             },
             "type": "array",
             "title": "Imagegen Execution Modes",
             "default": [
-              "codex-imagegen-builtin"
+              "openai-image-api"
             ]
           },
           "upload_mime_types": {

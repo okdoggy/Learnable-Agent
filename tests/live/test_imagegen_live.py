@@ -9,41 +9,46 @@ from PIL import Image
 
 from lala.config import Settings
 from lala.domain.models import GenerateAIParameters
-from lala.renderers.imagegen import CodexImagegenRunner
+from lala.renderers.imagegen import OpenAIImagegenRunner
+
+pytestmark = pytest.mark.live
 
 
-@pytest.mark.live
-def test_live_codex_builtin_imagegen_contract(settings: Settings) -> None:
+def test_openai_image_api_edit_contract(tmp_path: Path) -> None:
     if os.getenv("LALA_RUN_LIVE_IMAGEGEN") != "1":
-        pytest.skip("set LALA_RUN_LIVE_IMAGEGEN=1 to run the Codex built-in $imagegen test")
-    if shutil.which(settings.codex_executable) is None:
-        pytest.skip("Codex CLI is not installed on PATH")
-    request_id = "req_live_imagegen"
-    source = settings.var_dir / "jobs" / request_id / "input" / "source.png"
-    source.parent.mkdir(parents=True)
-    fixture = (
-        Path(__file__).resolve().parents[1]
-        / "fixtures"
-        / "imagegen"
-        / "backlit-still-life-source.png"
-    )
-    shutil.copyfile(fixture, source)
-    destination = settings.output_dir / "imagegen" / request_id / "result.png"
+        pytest.skip("LALA_RUN_LIVE_IMAGEGEN=1이 아닌 환경에서는 실제 API 비용을 사용하지 않습니다.")
+    settings = Settings.from_env(tmp_path)
+    if not settings.imagegen_openai_api_key:
+        pytest.skip("OPENAI_API_KEY가 설정되지 않았습니다.")
+    settings.ensure_directories()
 
-    result = CodexImagegenRunner(settings).edit(
-        source,
-        destination,
-        GenerateAIParameters(
-            use_case="lighting-weather",
-            prompt="구도를 유지하면서 머그잔의 어두운 그림자만 자연스럽게 회복",
-            constraints=["머그잔, 천, 창문, 카메라 구도와 물체 위치를 유지"],
+    fixture_root = Path(__file__).resolve().parents[1] / "fixtures" / "imagegen"
+    source = settings.var_dir / "jobs" / "live-imagegen" / "input" / "source.png"
+    source.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(fixture_root / "backlit-still-life-source.png", source)
+    destination = settings.output_dir / "imagegen" / "live-imagegen" / "result.png"
+    parameters = GenerateAIParameters(
+        execution_mode="openai-image-api",
+        use_case="lighting-weather",
+        prompt=(
+            "Recover only the underexposed shadows on the mug and table so their "
+            "detail is natural and visible."
         ),
+        constraints=[
+            "preserve the mug, cloth, window, warm backlight, geometry, and object positions"
+        ],
+        avoid=["new objects", "text", "logos", "watermark", "composition changes"],
     )
 
-    assert result.path.is_file()
-    assert result.execution_mode == "codex-imagegen-builtin"
-    with Image.open(result.path) as generated:
-        generated.load()
-        assert generated.format == "PNG"
-        assert generated.info == {}
-        assert len(generated.getexif()) == 0
+    result = OpenAIImagegenRunner(settings).edit(source, destination, parameters)
+
+    assert result.path == destination.resolve()
+    assert result.model == "gpt-image-2"
+    assert result.quality == "low"
+    assert result.size == "1024x1024"
+    with Image.open(result.path) as image:
+        image.load()
+        assert image.size == (1024, 1024)
+        assert image.format == "PNG"
+        assert image.info == {}
+        assert len(image.getexif()) == 0

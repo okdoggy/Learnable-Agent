@@ -21,6 +21,7 @@ ALLOWED_AUDIT_FIELDS = frozenset(
         "asset_id",
         "idempotent_replay",
         "planner_prompt_sha256",
+        "calibration_registry_sha256",
         "input_mime",
         "input_bytes",
         "input_width",

@@ -33,6 +33,22 @@ sources:
 """.lstrip(),
         encoding="utf-8",
     )
+    (tmp_path / "config" / "parameter-registry.yaml").write_text(
+        """
+schema_version: "1.0"
+calibration_version: "1.0.0"
+remaster_engine_version: "1.0.0"
+capabilities:
+  remaster:
+    scope: global
+    unsupported: [semantic-local-masks]
+calibration:
+  shadows:
+    conservative_start_range: [-5, 5]
+    caution: global shadow lift also raises background shadows
+""".lstrip(),
+        encoding="utf-8",
+    )
     (tmp_path / "luts" / "manifest.yaml").write_text(
         'schema_version: "1.0"\ncatalog_version: "2026-08-02"\nluts: []\n',
         encoding="utf-8",

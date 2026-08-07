@@ -112,8 +112,8 @@ class ServiceCapabilitiesData(ApiModel):
     planner: Literal["hermes-llm"] = "hermes-llm"
     edit_plan_versions: tuple[Literal["1.0"], ...] = ("1.0",)
     remaster_engine_versions: tuple[Literal["1.0"], ...] = ("1.0",)
-    imagegen_execution_modes: tuple[Literal["codex-imagegen-builtin"], ...] = (
-        "codex-imagegen-builtin",
+    imagegen_execution_modes: tuple[Literal["openai-image-api"], ...] = (
+        "openai-image-api",
     )
     upload_mime_types: tuple[Literal["image/jpeg", "image/png", "image/webp"], ...] = (
         "image/jpeg",

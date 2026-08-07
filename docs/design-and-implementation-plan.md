@@ -1,8 +1,8 @@
 # Learnable Agent(lala) 설계 및 구현 계획
 
-- 문서 상태: 구현 기준(Implemented, revision 3)
+- 문서 상태: 구현 기준(Implemented, revision 5)
 - 작성일: 2026-08-02
-- 최종 수정일: 2026-08-02
+- 최종 수정일: 2026-08-07
 - 대상 Agent: `lala(라라)`
 
 ## 1. 문서 목적과 우선순위
@@ -11,8 +11,9 @@
 API 계약, 지식 수집·승격, 이미지 실행, 보안 및 테스트가 같은 원칙을 따르도록 하는 것이 목적이다.
 
 작업을 시작할 때는 항상 `adr/*.md`를 먼저 읽는다. `status: accepted`인 ADR은 이 문서와
-`AGENTS.md`의 일반 설계 설명보다 우선한다. 현재 accepted ADR은 없으며, 향후 충돌이 생기면
-구현으로 우회하지 않고 새 결정을 요청한다.
+`AGENTS.md`의 일반 설계 설명보다 우선한다. 현재 accepted ADR은 `001`의 오프라인 calibration,
+`002`의 OpenAI Image API, `003`의 Slack 단일 runtime fast path다. 충돌이 생기면 구현으로 우회하지
+않고 새 결정을 요청한다.
 
 ## 2. 확정 요구사항
 
@@ -32,13 +33,17 @@ API 계약, 지식 수집·승격, 이미지 실행, 보안 및 테스트가 같
    `technical-library/001-xxxx.md` 형식으로 발행한다.
 9. 사용자 추천에는 `status: active`인 technical 문서만 근거로 사용할 수 있으며, LLM이 실제로
    읽은 technical ID와 version만 `evidence`에 기록한다.
-10. Generate AI는 Codex의 `$imagegen` 내장 도구를 사용한다. Image API CLI 또는
-    `OPENAI_API_KEY` 경로로 자동 전환하지 않으며 결과는 프로젝트의 요청별 output에 PNG로
-    복사한다.
+10. Generate AI는 이미지 생성 전용 `LALA_IMAGEGEN_OPENAI_API_KEY`로 OpenAI Image API를 호출한다.
+    `gpt-image-2`, `low`, `1024x1024`, PNG로 고정하고 Codex `$imagegen`으로 fallback하지 않는다.
 11. Markdown, YAML, JSON은 UTF-8과 LF로 읽고 쓴다. 대체 문자 U+FFFD가 포함된 문서는
     거부한다.
 12. 세 Hermes skill과 그 reference는 런타임 프롬프트의 단일 원본이다. 반복 오류를 바탕으로
     self-improvement할 수 있지만 보안·스키마·active evidence gate는 약화할 수 없다.
+13. raw와 technical library는 Hermes 세션/임시 작업공간이 아니라 각각 프로젝트 루트의 `raw/`와
+    `technical-library/`에 영속 저장한다. 두 경로는 별도 환경변수로 재지정하지 않는다.
+14. 실제 서비스는 원본과 결과의 전후 미학 품질 gate를 실행하지 않는다. versioned renderer capability와
+    parameter calibration을 실행 전에 적용하고, 매일 21:00 Asia/Seoul 개발 cron이 최근 Slack 세션을
+    오프라인 검토해 production 자동 수정 없는 비식별 후보 보고서를 만든다.
 
 여기서 금지하는 “token 기반”은 사용자 프롬프트를 단어 조각으로 분류하는 의미 결정 방식이다.
 업로드 URL의 HMAC `token`이나 LUT 파일 형식의 keyword parser처럼 인증·파일 문법을 검증하는
@@ -83,13 +88,14 @@ flowchart LR
     V[Vibe Editing Tool 서버] -->|HTTPS + Bearer| A[FastAPI lala API]
     A -->|image + structured prompt| H[Hermes LLM]
     S[Slack 사용자] --> G[Hermes Slack Gateway]
-    G --> H
+    G --> C[lala-coordinator]
+    C -->|process_slack_image 1회| SM[lala-slack MCP]
+    SM --> H
 
-    H --> C[lala-coordinator]
     H --> M[lala-tools MCP]
     M --> R[Remaster Renderer]
     M --> L[LUT Renderer]
-    M --> I[Codex $imagegen Adapter]
+    M --> I[OpenAI gpt-image-2 Adapter]
 
     CR9[09:00 Hermes Cron] --> KC[knowledge-collector]
     KC -->|web 탐색 + LLM 분리| M
@@ -98,6 +104,11 @@ flowchart LR
     CR10[10:00 Hermes Cron] --> LC[library-curator]
     LC -->|LLM 의미 비교| M
     M --> TL[technical-library/001-xxxx.md]
+
+    CR21[21:00 개발 Cron] --> CAL[lala-calibration-reviewer]
+    CAL -->|session_search + 제한된 오프라인 전후 검토| STAGE[/opt/data/calibration-staging/]
+    PUB21[21:10 no-agent publisher] -->|UTF-8 검증 + 원자적 복사| REP[calibration/reports/]
+    STAGE --> PUB21
 ```
 
 ### 4.1 프롬프트 원본
@@ -108,11 +119,14 @@ flowchart LR
 - `skills/knowledge-collector/references/raw-format.md`
 - `skills/library-curator/SKILL.md`
 - `skills/library-curator/references/technical-note-format.md`
+- `skills/lala-calibration-reviewer/SKILL.md`
+- `skills/lala-calibration-reviewer/references/report-format.md`
+- `config/parameter-registry.yaml`
 
 API planner는 coordinator reference를 매 요청마다 UTF-8로 다시 읽으므로 승인된 prompt 개선이
-다음 요청부터 적용된다. API 경로에서는 모든 active technical 문서의 전문을 Hermes 입력에
-포함해 실제로 읽을 수 있게 한다. Hermes native coordinator 경로에서는
-`list_technical_notes(status="active")`와 `read_technical_note`를 사용한다.
+다음 요청부터 적용된다. API와 Slack composite 경로에서는 모든 active technical 문서의 전문을
+내부 Hermes planner 입력에 포함해 실제로 읽을 수 있게 한다. Slack 외부 Agent는 technical note를
+개별 조회하지 않고 `process_slack_image` 한 번만 호출한다.
 읽은 planner prompt의 SHA-256은 사용자 문장 없이 request ID와 함께 감사 로그에 남겨,
 self-improvement 전후의 판단을 재현하고 비교할 수 있게 한다.
 
@@ -128,8 +142,9 @@ self-improvement 전후의 판단을 재현하고 비교할 수 있게 한다.
 4. Hermes가 사용자 의도와 active technical 문서 전문을 함께 해석한다.
 5. Hermes가 `EditPlan 1.0` JSON을 반환한다.
 6. schema, 단계 조합, LUT manifest와 active evidence gate를 검증한다.
-7. Vibe 요청이면 계획만 반환한다.
-8. Slack 요청이면 검증된 계획을 실행하고 설명과 실제 결과 파일을 반환한다.
+7. renderer capability와 versioned parameter calibration의 전역/국소 범위 및 누적 효과를 실행 전에 확인한다.
+8. Vibe 요청이면 계획만 반환한다.
+9. Slack 요청이면 `process_slack_image` composite 도구가 위 1~7단계와 선택적 실행을 한 번에 수행하고 설명과 실제 결과 파일을 반환한다. 서비스 응답 전 원본·결과의 vision 품질 비교는 하지 않으며 파일 안전 gate만 유지한다.
 
 raw 문서는 사용자 추천 입력에 포함하지 않는다. 적합한 active technical 문서가 없으면
 `evidence=[]`, 낮은 confidence와 `근거 technical 문서 없음` 경고를 사용한다.
@@ -210,7 +225,7 @@ NaN/Inf, 지나치게 큰 LUT와 잘못된 1D/3D 크기는 거부한다.
 {
   "operation": "edit",
   "use_case": "lighting-weather",
-  "execution_mode": "codex-imagegen-builtin",
+  "execution_mode": "openai-image-api",
   "prompt": "구도는 유지하고 어두운 그림자만 자연스럽게 회복",
   "constraints": ["피사체, 정체성, 구도와 물체 위치 유지"],
   "avoid": ["새 객체", "텍스트", "워터마크"],
@@ -219,13 +234,13 @@ NaN/Inf, 지나치게 큰 LUT와 잘못된 1D/3D 크기는 거부한다.
 ```
 
 - v1에서는 Generate AI를 다른 단계와 섞지 않는다.
-- Codex 프롬프트에 `$imagegen`을 명시하고 입력 이미지를 edit target으로 지정한다.
-- 로그인된 Codex의 내장 도구를 사용하며 Image API 전용 `model`, `quality`, `size` 필드를
-  계약에 두지 않는다.
-- `codex exec`는 내장 스킬을 호출하기 위한 오케스트레이션 경로일 뿐 Image API CLI가 아니다.
-- Codex workspace는 요청별 output 디렉터리로 좁히고 프롬프트는 stdin으로 전달한다.
-- 결과의 실제 경로와 PNG 형식을 다시 검증하고 안전한 PNG로 재인코딩해 메타데이터를 제거한다.
-- 내장 도구 실패를 Remaster나 Image API CLI로 조용히 대체하지 않는다.
+- 입력 이미지는 OpenAI `POST /v1/images/edits`의 `image[]` edit target으로 전달한다.
+- renderer는 `gpt-image-2`, `low`, `1024x1024`, `output_format=png`를 고정하며 이 값은
+  사용자 EditPlan 입력으로 받지 않는다.
+- primary prompt, 보존 조건과 회피 조건을 하나의 multipart 요청으로 전달한다.
+- `LALA_IMAGEGEN_OPENAI_API_KEY`는 Generate AI HTTP Authorization에만 사용하고 plan·결과·감사 로그에 남기지 않는다.
+- 결과 base64를 허용된 output 경로에 저장하고 안전한 PNG로 재인코딩해 메타데이터를 제거한다.
+- 429·5xx·transport timeout만 제한적으로 재시도하고 실패를 다른 도구나 Codex로 대체하지 않는다.
 
 ## 7. Vibe Editing Tool 연동
 
@@ -256,7 +271,7 @@ Vibe 브라우저가 lala를 직접 호출하지 않고 Vercel Route/Function �
 
 1. Hermes Slack Gateway가 허용된 사용자와 채널의 이미지 첨부를 요청 workspace에 둔다.
 2. `lala-coordinator`가 LLM으로 계획을 만들고 세 gate를 통과시킨다.
-3. Remaster/LUT는 프로젝트 렌더러가, Generate AI는 Codex 내장 `$imagegen`이 실행한다.
+3. Remaster/LUT는 프로젝트 렌더러가, Generate AI는 OpenAI Image API의 `gpt-image-2`가 실행한다.
 4. 한국어 추천, 실제 evidence ID/version과 존재하는 결과 파일 경로를 반환한다.
 5. Hermes Deliverable Mode가 파일을 Slack native attachment로 전달한다.
 
@@ -313,7 +328,8 @@ hash, 한 시나리오 제출 단위와 UTF-8/LF를 검증한 뒤 atomic rename�
 
 ## 10. 10:00 technical library 큐레이션
 
-Hermes Cron `0 10 * * *`에 `library-curator`를 연결한다.
+Hermes Cron `0 10 * * *`에 `library-curator`를 연결한다. 모든 페이지의 raw를 검토하며 Hermes
+LLM이 전체 문맥으로 중요도와 필수 기술화 여부를 판단한다.
 
 ### 10.1 Hermes LLM 절차
 
@@ -323,6 +339,8 @@ Hermes Cron `0 10 * * *`에 `library-curator`를 연결한다.
 4. 반복성, 결과에 미치는 의미, 적용 조건, 지원 도구와 충돌을 설명한다.
 5. 유용하지만 근거가 부족하면 candidate, 반복된 독립 근거가 충분하면 active로 제안한다.
 6. `publish_technical_note`로 구조화된 결과를 발행하고 다시 읽어 검수한다.
+7. 필수 기술화 대상은 독립 근거가 충분하면 active, 아직 부족하면 candidate로 프로젝트의
+   `technical-library/`에 보존하고, 보류·병합·충돌 판단도 이유와 함께 보고한다.
 
 단어 겹침, parameter alias, 정규식, 단순 횟수나 고정 점수로 묶는 Python curator는 두지 않는다.
 
@@ -363,6 +381,18 @@ technical-library/
 번호형 technical 문서는 Hermes `SKILL.md` 자체가 아니다. self-improvement 대상 skill은
 `skills/` 아래 세 workflow이고, technical 문서는 MCP를 통해 LLM에 제공되는 검증된 지식이다.
 
+
+### 10.3 21:00 오프라인 캘리브레이션
+
+- `lala-calibration-reviewer`는 마지막 성공 보고서 이후 Slack 이미지 편집 세션을 최대 5건씩 검토한다.
+- `session_search`를 사용하며 Hermes session DB를 직접 읽거나 수정하지 않는다.
+- TTL 안에 원본과 결과가 모두 존재할 때만 개발용 전후 vision 평가를 수행한다.
+- capability 불일치, parameter calibration, renderer, workspace handoff, 불필요한 호출과 검수 누락을 분류한다.
+- reviewer는 file-tool safe root 안의 staging에 보고서를 쓰고, 21:10 no-agent publisher가 UTF-8/U+FFFD와 동명 충돌을 검사해 `calibration/reports/`로 원자적으로 복사한다.
+- `calibration/reports/`에는 request/session ID, 도구·버전·파라미터, 비식별 지표와 후보만 저장한다.
+- 사용자 이미지·프롬프트·세션 전문을 raw, technical-library 또는 보고서에 복사하지 않는다.
+- 한 사례로 production을 수정하지 않는다. 반복된 독립 실패와 사용자 피드백, benchmark 무회귀를 확인한 뒤 별도 개발 검증에서 calibration version을 올린다.
+
 ## 11. evidence gate
 
 - 추천 후보는 `status: active` 문서로 제한한다.
@@ -379,7 +409,8 @@ technical-library/
 - Markdown/YAML/JSON은 strict UTF-8로 decode하고 UTF-8 without BOM으로 쓴다.
 - CRLF와 CR은 저장 전에 LF로 정규화한다.
 - U+FFFD 또는 UTF-8로 encode할 수 없는 surrogate가 있으면 발행을 거부한다.
-- raw와 technical 문서는 임시 파일에 fsync한 뒤 atomic rename한다.
+- raw와 technical 문서는 각 프로젝트 대상 디렉터리 안의 임시 파일에 fsync한 뒤 atomic rename한다.
+  Hermes 세션의 임시 폴더를 최종 저장소로 사용하지 않는다.
 - schema export도 같은 UTF-8/LF writer를 사용한다.
 
 ### 12.2 이미지와 개인정보
@@ -403,7 +434,7 @@ src/lala/
 ├── hermes/              # Responses planner와 Slack coordinator
 ├── knowledge/           # raw/technical 구조 검증과 원자 저장
 ├── mcp/                 # Hermes용 최소 권한 도구
-├── renderers/           # Remaster, LUT, Codex built-in imagegen
+├── renderers/           # Remaster, LUT, OpenAI gpt-image-2 adapter
 ├── storage/             # asset, workspace, SQLite, cleanup
 └── observability/       # 비식별 audit와 metrics
 
@@ -423,11 +454,12 @@ schemas/
 
 - API와 Slack/Cron 비밀은 secret store에서 주입한다.
 - `HERMES_API_KEY`는 planner가 Hermes API를 호출할 때만 사용한다.
-- Generate AI에는 `OPENAI_API_KEY`가 필요하지 않다. 로그인된 Codex와 `$imagegen` 스킬이
-  필요하다.
-- Cron 등록은 `scripts/register-hermes-cron.sh`를 사용하고 등록 직후 두 작업을 수동 실행한다.
+- Generate AI에는 이미지 생성 전용 `LALA_IMAGEGEN_OPENAI_API_KEY`가 필요하다. key는 이 renderer의
+  Authorization 헤더에만 사용하고 secret store에서 주입한다.
+- Cron 등록은 `scripts/register-hermes-cron.sh`를 사용하고 등록 직후 네 작업을 수동 실행한다.
 - 09시 작업에는 web/skills/lala-tools, 10시 작업에는 skills/lala-tools만 최소 권한으로 노출한다.
-- Agent timeout, rate limit과 Codex 실행 실패는 retryable 여부가 있는 안정된 한국어 오류로
+- 21시 개발 작업에는 file/skills/session_search/vision/lala-tools만 노출하고 한 실행당 최대 5개 세션을 검토한다. 21:10 publisher는 agent 없이 staging stdout과 보고서 복사만 수행한다. cleanup은 이 두 작업과 경합하지 않게 뒤로 오프셋한다.
+- Agent timeout과 OpenAI Image API의 rate limit·transport·HTTP 실패는 retryable 여부가 있는 안정된 한국어 오류로
   변환한다.
 - Generate AI 실패를 다른 도구로 자동 대체하지 않는다.
 
@@ -451,13 +483,14 @@ uv run pytest
 - Hermes-authored technical note의 `001-xxxx.md`, version, 독립 출처 gate
 - UTF-8/LF 정규화와 U+FFFD 거부
 - Remaster/LUT 결정론, alpha, grayscale, path traversal와 golden image
+- planner의 capability/calibration registry 전문 제공과 hash 감사, 21시 cron 등록·cursor context
 - FastAPI 인증, idempotency, Swagger/ReDoc/OpenAPI, 202와 polling
 - Slack 성공·실패 메시지와 실제 파일 존재
-- Codex 내장 `$imagegen` prompt/환경 격리, PNG/metadata 계약
+- OpenAI Image API의 model/quality/size/multipart 계약, key 비노출, retry, PNG/metadata 계약
 
-`tests/fixtures/imagegen/`에는 내장 `$imagegen`으로 만든 테스트 전용 source/edit PNG가 있다.
-기본 테스트는 이 fixture와 fake runner로 회귀를 확인한다. `LALA_RUN_LIVE_IMAGEGEN=1`은
-Codex가 설치·로그인된 배포 후보 환경에서만 opt-in으로 실행한다.
+`tests/fixtures/imagegen/`에는 과거 `$imagegen`으로 만든 테스트 전용 source/edit PNG가 있다.
+기본 테스트는 이 fixture와 `httpx.MockTransport`로 비용 없이 요청·응답 계약을 확인한다.
+`LALA_IMAGEGEN_OPENAI_API_KEY`를 주입한 배포 후보 환경에서만 `LALA_RUN_LIVE_IMAGEGEN=1`로 opt-in live test를 실행한다.
 
 ## 16. 완료 정의
 
@@ -467,6 +500,6 @@ Codex가 설치·로그인된 배포 후보 환경에서만 opt-in으로 실행�
 - raw는 한 파일 한 시나리오이며 사용자 데이터와 분리된다.
 - technical library는 번호형 Markdown이고 active 문서만 evidence가 된다.
 - Vibe는 FastAPI 대화형 문서와 고정 OpenAPI/JSON Schema/TypeScript 계약으로 연동할 수 있다.
-- Generate AI는 Codex 내장 `$imagegen`과 프로젝트 PNG output만 사용한다.
+- Generate AI는 OpenAI `gpt-image-2`, `low`, `1024x1024`와 프로젝트 PNG output만 사용한다.
 - 모든 문서 산출물은 UTF-8/LF이며 U+FFFD가 없다.
 - 전체 lint, schema export, contract/unit/golden/E2E 테스트가 통과한다.

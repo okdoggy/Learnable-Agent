@@ -32,7 +32,7 @@ export interface GenerateAIParameters {
     | "style-transfer"
     | "compositing"
     | "sketch-to-render";
-  execution_mode: "codex-imagegen-builtin";
+  execution_mode: "openai-image-api";
   prompt: string;
   constraints: string[];
   avoid: string[];
@@ -123,7 +123,7 @@ export interface ServiceCapabilitiesData {
   planner: "hermes-llm";
   edit_plan_versions: "1.0"[];
   remaster_engine_versions: "1.0"[];
-  imagegen_execution_modes: "codex-imagegen-builtin"[];
+  imagegen_execution_modes: "openai-image-api"[];
   upload_mime_types: ("image/jpeg" | "image/png" | "image/webp")[];
   swagger_url: "/docs";
   redoc_url: "/redoc";

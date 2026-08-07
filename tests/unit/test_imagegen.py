@@ -1,19 +1,21 @@
 from __future__ import annotations
 
-import subprocess
+import base64
+import io
 from dataclasses import replace
 from pathlib import Path
 
+import httpx
 import pytest
 from PIL import Image, ImageStat, PngImagePlugin
 
 from lala.config import Settings
 from lala.domain.errors import ExecutionError
 from lala.domain.models import GenerateAIParameters
-from lala.renderers.imagegen import CodexImagegenRunner
+from lala.renderers.imagegen import OpenAIImagegenRunner
 
 
-def test_committed_builtin_imagegen_edit_fixture_is_valid() -> None:
+def test_committed_imagegen_edit_fixture_is_valid() -> None:
     fixture_root = Path(__file__).resolve().parents[1] / "fixtures" / "imagegen"
     with Image.open(fixture_root / "backlit-still-life-source.png") as source:
         source.load()
@@ -32,149 +34,178 @@ def test_committed_builtin_imagegen_edit_fixture_is_valid() -> None:
     assert edited_luminance > source_luminance
 
 
-def _configured(settings: Settings, tmp_path: Path, *, attempts: int = 3) -> Settings:
-    executable = tmp_path / "codex"
-    executable.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
-    executable.chmod(0o755)
+def _configured(settings: Settings, *, attempts: int = 3) -> Settings:
     return replace(
         settings,
-        codex_executable=str(executable),
+        imagegen_openai_api_key="image-api-secret",
         imagegen_max_attempts=attempts,
     )
 
 
-def _source_and_destination(settings: Settings, request_id: str) -> tuple[Path, Path]:
+def _source_and_destination(
+    settings: Settings, request_id: str, *, size: tuple[int, int] = (16, 16)
+) -> tuple[Path, Path]:
     source = settings.var_dir / "jobs" / request_id / "input" / "source.png"
     source.parent.mkdir(parents=True)
-    Image.new("RGB", (16, 16), (1, 2, 3)).save(source)
+    Image.new("RGB", size, (1, 2, 3)).save(source)
     destination = settings.output_dir / "imagegen" / request_id / "result.png"
     return source, destination
 
 
-def test_imagegen_invokes_codex_builtin_skill_without_api_key(
-    settings: Settings, tmp_path: Path, monkeypatch
-) -> None:
-    configured = _configured(settings, tmp_path)
-    source, destination = _source_and_destination(settings, "req_imagegen")
-    captured: dict[str, object] = {}
+def _encoded_png(*, size: tuple[int, int] = (1024, 1024), metadata: bool = False) -> str:
+    generated = io.BytesIO()
+    pnginfo = None
+    if metadata:
+        pnginfo = PngImagePlugin.PngInfo()
+        pnginfo.add_text("private", "must be removed")
+    Image.new("RGB", size, (4, 5, 6)).save(generated, format="PNG", pnginfo=pnginfo)
+    return base64.b64encode(generated.getvalue()).decode()
 
-    def fake_run(command: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
-        captured["command"] = command
-        captured["kwargs"] = kwargs
-        prompt = str(kwargs["input"])
-        assert "$imagegen" in prompt
-        assert "default built-in image generation tool" in prompt
-        assert "fallback Image API CLI" in prompt
-        assert "인물의 얼굴을 유지" in prompt
-        assert str(destination.resolve()) in prompt
-        destination.parent.mkdir(parents=True, exist_ok=True)
-        metadata = PngImagePlugin.PngInfo()
-        metadata.add_text("private", "must be removed")
-        Image.new("RGB", (16, 16), (4, 5, 6)).save(destination, pnginfo=metadata)
-        return subprocess.CompletedProcess(command, 0, "ok", "")
 
-    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
-    monkeypatch.setenv("SLACK_BOT_TOKEN", "must-not-leak")
-    monkeypatch.setenv("HERMES_API_KEY", "must-not-leak")
-    monkeypatch.setattr(subprocess, "run", fake_run)
-    parameters = GenerateAIParameters(
+def _parameters() -> GenerateAIParameters:
+    return GenerateAIParameters(
+        execution_mode="openai-image-api",
         use_case="lighting-weather",
-        prompt="배경 날씨만 비 오는 날로 변경",
-        constraints=["인물의 얼굴을 유지"],
+        prompt="only change the weather",
+        constraints=["keep identity"],
+        avoid=["avoid text"],
     )
 
-    result = CodexImagegenRunner(configured).edit(source, destination, parameters)
 
-    command = captured["command"]
-    assert isinstance(command, list)
-    assert command[1:3] == ["exec", "--ephemeral"]
-    assert command[command.index("--cd") + 1] == str(destination.parent)
-    assert "--skip-git-repo-check" in command
-    assert "--image" in command
-    assert command[-1] == "-"
-    environment = captured["kwargs"]["env"]
-    assert "OPENAI_API_KEY" not in environment
-    assert "SLACK_BOT_TOKEN" not in environment
-    assert "HERMES_API_KEY" not in environment
-    assert captured["kwargs"]["encoding"] == "utf-8"
+def test_imagegen_calls_gpt_image_2_low_at_1k(settings: Settings) -> None:
+    configured = _configured(settings)
+    source, destination = _source_and_destination(settings, "req_openai_imagegen")
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url == "https://api.openai.com/v1/images/edits"
+        assert request.headers["authorization"] == "Bearer image-api-secret"
+        body = request.read()
+        assert b'name="model"' in body and b"gpt-image-2" in body
+        assert b'name="quality"' in body and b"low" in body
+        assert b'name="size"' in body and b"1024x1024" in body
+        assert b'name="output_format"' in body and b"png" in body
+        assert b'name="image[]"' in body
+        assert b"only change the weather" in body
+        assert b"keep identity" in body
+        assert b"avoid text" in body
+        assert b"Preserve the input composition and aspect ratio" in body
+        return httpx.Response(200, json={"data": [{"b64_json": _encoded_png(metadata=True)}]})
+
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+    result = OpenAIImagegenRunner(configured, client=client).edit(
+        source, destination, _parameters()
+    )
+
     assert result.path == destination.resolve()
-    assert result.execution_mode == "codex-imagegen-builtin"
-    with Image.open(result.path) as generated:
-        assert generated.info == {}
-        assert len(generated.getexif()) == 0
+    assert result.execution_mode == "openai-image-api"
+    assert result.model == "gpt-image-2"
+    assert result.quality == "low"
+    assert result.size == "1024x1024"
+    with Image.open(result.path) as image:
+        assert image.size == (1024, 1024)
+        assert image.info == {}
+        assert len(image.getexif()) == 0
 
 
-def test_imagegen_retries_only_transient_codex_failures(
-    settings: Settings, tmp_path: Path, monkeypatch
+@pytest.mark.parametrize(
+    ("source_size", "expected_size"),
+    [((3, 2), "1536x1024"), ((2, 3), "1024x1536")],
+)
+def test_imagegen_selects_1k_size_closest_to_input_aspect_ratio(
+    settings: Settings, source_size: tuple[int, int], expected_size: str
 ) -> None:
-    configured = _configured(settings, tmp_path, attempts=2)
+    configured = _configured(settings)
+    source, destination = _source_and_destination(
+        settings, f"req_aspect_{source_size[0]}_{source_size[1]}", size=source_size
+    )
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        body = request.read()
+        assert expected_size.encode() in body
+        width, height = (int(value) for value in expected_size.split("x"))
+        return httpx.Response(
+            200, json={"data": [{"b64_json": _encoded_png(size=(width, height))}]}
+        )
+
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+    result = OpenAIImagegenRunner(configured, client=client).edit(
+        source, destination, _parameters()
+    )
+
+    assert result.size == expected_size
+    with Image.open(result.path) as image:
+        assert image.size == tuple(int(value) for value in expected_size.split("x"))
+
+
+def test_imagegen_requires_api_key_only_when_called(settings: Settings) -> None:
+    source, destination = _source_and_destination(settings, "req_missing_key")
+    called = False
+
+    def handler(_: httpx.Request) -> httpx.Response:
+        nonlocal called
+        called = True
+        return httpx.Response(500)
+
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+    with pytest.raises(ExecutionError, match="OPENAI_API_KEY") as captured:
+        OpenAIImagegenRunner(replace(settings, imagegen_openai_api_key=""), client=client).edit(
+            source, destination, _parameters()
+        )
+
+    assert captured.value.retryable is False
+    assert called is False
+
+
+def test_imagegen_retries_429(settings: Settings, monkeypatch) -> None:
+    configured = _configured(settings, attempts=2)
     source, destination = _source_and_destination(settings, "req_retry")
     calls = 0
 
-    def fake_run(command: list[str], **_: object) -> subprocess.CompletedProcess[str]:
+    def handler(_: httpx.Request) -> httpx.Response:
         nonlocal calls
         calls += 1
         if calls == 1:
-            return subprocess.CompletedProcess(command, 1, "", "HTTP 429 rate limit")
-        destination.parent.mkdir(parents=True, exist_ok=True)
-        Image.new("RGB", (16, 16), (4, 5, 6)).save(destination)
-        return subprocess.CompletedProcess(command, 0, "ok", "")
+            return httpx.Response(429)
+        return httpx.Response(200, json={"data": [{"b64_json": _encoded_png()}]})
 
-    monkeypatch.setattr(subprocess, "run", fake_run)
     monkeypatch.setattr("lala.renderers.imagegen.time.sleep", lambda _: None)
-
-    CodexImagegenRunner(configured).edit(
-        source,
-        destination,
-        GenerateAIParameters(use_case="lighting-weather", prompt="날씨만 변경"),
-    )
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+    OpenAIImagegenRunner(configured, client=client).edit(source, destination, _parameters())
 
     assert calls == 2
 
 
-def test_imagegen_does_not_retry_policy_or_user_errors(
-    settings: Settings, tmp_path: Path, monkeypatch
-) -> None:
-    configured = _configured(settings, tmp_path, attempts=3)
-    source, destination = _source_and_destination(settings, "req_policy")
+def test_imagegen_does_not_retry_auth_errors(settings: Settings) -> None:
+    configured = _configured(settings, attempts=3)
+    source, destination = _source_and_destination(settings, "req_auth")
     calls = 0
 
-    def fake_run(command: list[str], **_: object) -> subprocess.CompletedProcess[str]:
+    def handler(_: httpx.Request) -> httpx.Response:
         nonlocal calls
         calls += 1
-        return subprocess.CompletedProcess(command, 1, "", "policy blocked")
+        return httpx.Response(401)
 
-    monkeypatch.setattr(subprocess, "run", fake_run)
-
+    client = httpx.Client(transport=httpx.MockTransport(handler))
     with pytest.raises(ExecutionError) as captured:
-        CodexImagegenRunner(configured).edit(
-            source,
-            destination,
-            GenerateAIParameters(use_case="lighting-weather", prompt="날씨만 변경"),
-        )
+        OpenAIImagegenRunner(configured, client=client).edit(source, destination, _parameters())
 
     assert captured.value.retryable is False
     assert calls == 1
+    assert "image-api-secret" not in str(captured.value)
 
 
-def test_imagegen_rejects_output_symlink_escape(
-    settings: Settings, tmp_path: Path, monkeypatch
-) -> None:
-    configured = _configured(settings, tmp_path, attempts=1)
-    source, destination = _source_and_destination(settings, "req_symlink")
-    outside = tmp_path / "outside.png"
-    Image.new("RGB", (16, 16), (4, 5, 6)).save(outside)
+def test_imagegen_rejects_non_1k_response(settings: Settings) -> None:
+    configured = _configured(settings)
+    source, destination = _source_and_destination(settings, "req_wrong_size")
 
-    def fake_run(command: list[str], **_: object) -> subprocess.CompletedProcess[str]:
-        destination.parent.mkdir(parents=True, exist_ok=True)
-        destination.symlink_to(outside)
-        return subprocess.CompletedProcess(command, 0, "ok", "")
-
-    monkeypatch.setattr(subprocess, "run", fake_run)
-
-    with pytest.raises(ExecutionError, match="output 디렉터리"):
-        CodexImagegenRunner(configured).edit(
-            source,
-            destination,
-            GenerateAIParameters(use_case="lighting-weather", prompt="날씨만 변경"),
+    def handler(_: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            json={"data": [{"b64_json": _encoded_png(size=(512, 512))}]},
         )
+
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+    with pytest.raises(ExecutionError, match="1K") as captured:
+        OpenAIImagegenRunner(configured, client=client).edit(source, destination, _parameters())
+
+    assert captured.value.retryable is True

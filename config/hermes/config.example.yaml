@@ -6,21 +6,6 @@ skills:
   # 모든 변경을 사전 검토하려는 환경에서는 true로 전환한다.
   write_approval: false
 
-plugins:
-  enabled:
-    - lala-web-openai-codex
-
-web:
-  search_backend: openai-codex
-  extract_backend: openai-codex
-  openai_codex:
-    allowed_domains:
-      - adobe.com
-      - youtube.com
-      - youtu.be
-      - petapixel.com
-      - fstoppers.com
-
 mcp_servers:
   lala-tools:
     command: "uv"
@@ -28,16 +13,15 @@ mcp_servers:
     env:
       LALA_PROJECT_ROOT: "${LALA_PROJECT_ROOT}"
       LALA_VAR_DIR: "${LALA_VAR_DIR}"
-      # raw 지식은 외부 데이터 볼륨이 아니라 항상 현재 프로젝트의 raw/에 저장한다.
-      LALA_RAW_DIR: "${LALA_PROJECT_ROOT}/raw"
-      LALA_TECHNICAL_LIBRARY_DIR: "${LALA_TECHNICAL_LIBRARY_DIR}"
       LALA_OUTPUT_DIR: "${LALA_OUTPUT_DIR}"
-      LALA_CODEX_EXECUTABLE: "${LALA_CODEX_EXECUTABLE}"
+      LALA_SLACK_CACHE_DIR: "${LALA_SLACK_CACHE_DIR}"
+      LALA_IMAGEGEN_OPENAI_API_KEY: "${LALA_IMAGEGEN_OPENAI_API_KEY}"
     timeout: 600
     connect_timeout: 20
     supports_parallel_tool_calls: false
     tools:
       include:
+        - process_slack_image
         - inspect_image
         - validate_edit_plan
         - apply_remaster
@@ -51,6 +35,29 @@ mcp_servers:
         - publish_technical_note
       prompts: false
       resources: false
+
+  # Slack 운영 세션은 composite fast path만 볼 수 있는 별도 MCP toolset을 사용한다.
+  lala-slack:
+    command: "uv"
+    args: ["--directory", "${LALA_PROJECT_ROOT}", "run", "lala-mcp"]
+    env:
+      LALA_PROJECT_ROOT: "${LALA_PROJECT_ROOT}"
+      LALA_VAR_DIR: "${LALA_VAR_DIR}"
+      LALA_OUTPUT_DIR: "${LALA_OUTPUT_DIR}"
+      LALA_SLACK_CACHE_DIR: "${LALA_SLACK_CACHE_DIR}"
+      LALA_IMAGEGEN_OPENAI_API_KEY: "${LALA_IMAGEGEN_OPENAI_API_KEY}"
+    timeout: 600
+    connect_timeout: 20
+    supports_parallel_tool_calls: false
+    tools:
+      include: [process_slack_image]
+      prompts: false
+      resources: false
+
+platform_toolsets:
+  slack: [skills, lala-slack]
+  # 내부 EditPlan planner는 모든 context를 요청 body로 받으므로 tool loop가 필요 없다.
+  api_server: [no_mcp]
 
 group_sessions_per_user: true
 unauthorized_dm_behavior: "ignore"

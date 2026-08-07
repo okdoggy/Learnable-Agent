@@ -1,21 +1,39 @@
 ---
 name: lala-coordinator
-description: Vibe Editing Tool 또는 Slack의 이미지 편집 요청을 이미지 전체 맥락과 사용자 의도로 해석해 EditPlan 1.0을 만들고, 활성 technical library 근거를 선택하며, Slack 요청은 안전한 렌더러로 실행할 때 사용한다.
+description: Slack 또는 Vibe Editing Tool의 이미지 편집 방법 문의와 결과 요청을 안전한 단일 fast path로 처리할 때 사용한다.
 ---
 
 # Lala Coordinator
 
-1. `inspect_image`로 이미지를 확인하고 사용자 목표, 변경 대상, 보존 대상, 금지 대상을 구분한다.
-2. 단어 포함 여부, 정규식, 동의어 표, 키워드 점수로 도구나 파라미터를 고르지 않는다. 이미지와 요청의 전체 의미를 LLM으로 판단한다.
-3. `list_technical_notes(status="active")`로 목록을 본 뒤 관련성이 있을 가능성이 있는 문서만 `read_technical_note`로 읽는다. 읽지 않은 문서를 근거로 쓰지 않는다.
-4. 새 픽셀 생성 없이 가능한 보정은 Remaster, 승인된 색 변환은 LUT, 객체·배경·구도처럼 생성이 필요한 변경은 Generate AI를 고려하되 최종 선택은 문맥으로 판단한다.
-5. technical library에 적합한 문서가 없으면 일반 이미지 편집 원칙으로 보수적으로 판단하고 `evidence=[]`, 낮은 confidence, `근거 technical 문서 없음` 경고를 남긴다.
-6. `validate_edit_plan`을 통과한 결과만 반환하거나 실행한다. Generate AI는 v1에서 다른 단계와 섞지 않는다.
-7. Vibe에는 계획만 반환한다. Slack에서는 계획을 순서대로 실행하고 추천 설명과 실제 결과 파일을 함께 전달한다.
-8. 실행 실패 시 추천을 보존하고 사용자용 오류, 재시도 가능 여부, 요청 ID를 전달한다.
+## Slack runtime fast path — 필수
 
-API planner가 매 요청마다 읽는 상세 프롬프트는 [references/planner-prompt.md](references/planner-prompt.md)에 있다.
+Slack 메시지에 이미지 첨부가 있고 편집 방법 또는 편집 결과를 요청하면 다음 절차만 사용한다.
 
-## 자기 개선
+1. 사용자가 방법만 묻는 경우 `mode="recommend"`, 실제 결과를 요청하는 경우 `mode="edit"`로 정한다.
+2. Hermes가 제공한 첨부 경로에서 basename만 취한다. 임의 경로나 원본 내용을 읽지 않는다.
+3. `process_slack_image(cache_filename, prompt, mode)`를 정확히 한 번 호출한다. 이 호출이 첨부 등록, EXIF orientation 적용과 PNG 정규화, 이미지 검사, active technical 근거를 포함한 Hermes 계획, EditPlan 검증, 선택적 렌더링, 메타데이터 제거를 모두 수행한다.
+4. 반환된 `message_ko`를 바탕으로 짧게 답한다. `mode="edit"`이고 `output_path`가 있으면 Slack 첨부로 결과를 전달한다.
+5. 오류가 나면 반환된 사용자용 오류와 request ID를 전달하고 중단한다. 운영 요청을 디버깅이나 개발 작업으로 전환하지 않는다.
 
-반복 사용에서 같은 오판, 누락 또는 불명확한 지시가 여러 번 확인되면 Hermes의 `skill_manage`로 이 스킬이나 planner reference를 작게 수정한다. 한 요청의 취향을 일반 규칙으로 만들지 말고, EditPlan 스키마·보안·active 근거 제한을 약화하지 않는다. 수정 후 다음 요청부터 새 프롬프트가 사용된다.
+Slack runtime에서는 다음을 하지 않는다.
+
+- `inspect_image`, `list_technical_notes`, `read_technical_note`, `validate_edit_plan`, `apply_remaster`, `apply_lut`, `apply_generate_ai`를 직접 조립하지 않는다.
+- file search/read/write, terminal, Python 실행, process 조회, source code·ADR·README 탐색, 임시 스크립트 작성, 코드 또는 skill 수정을 하지 않는다.
+- 추가 vision 비교, 결과 재검사, renderer 재실행, chunked/custom renderer fallback을 하지 않는다.
+- `references/planner-prompt.md`를 별도로 읽지 않는다. fast path 내부 planner가 단일 원본으로 사용한다.
+
+## Vibe와 명시적 개발 요청
+
+- Vibe API는 기존 API planner와 EditPlan 계약을 사용한다.
+- 사용자가 코드·설정·테스트 변경을 명시적으로 요청한 경우에만 개발 모드로 전환한다. Slack 이미지 운영 요청 자체는 개발 요청이 아니다.
+- Generate AI는 OpenAI Image API의 고정 계약(`gpt-image-2`, `low`, `1024x1024`, PNG)을 사용한다.
+
+## 운영 불변식
+
+- 단어 포함 여부, 정규식, 동의어 표, 키워드 점수로 의미 결정을 구현하지 않는다.
+- active technical library만 근거로 사용하고 실제 planner context에 제공된 ID와 version만 evidence에 기록한다.
+- 실시간으로 원본·결과를 두 번째 vision model로 비교하지 않는다. 파일 형식·해상도·metadata 제거 등 저비용 안전 gate는 유지한다.
+- 실행 실패 시 추천을 보존하고 사용자용 오류, 재시도 가능 여부, request ID를 전달한다.
+- 반복 오판 분석과 prompt 개선은 별도 개발 또는 nightly calibration workflow에서만 수행하며 운영 요청 도중 production을 수정하지 않는다.
+
+API planner의 단일 상세 프롬프트 원본은 [references/planner-prompt.md](references/planner-prompt.md)이다.

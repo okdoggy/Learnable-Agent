@@ -23,7 +23,7 @@ def _generate_step(order: int = 1) -> dict[str, object]:
         "parameters": {
             "operation": "edit",
             "use_case": "lighting-weather",
-            "execution_mode": "codex-imagegen-builtin",
+            "execution_mode": "openai-image-api",
             "prompt": "맑은 날을 비 오는 날로 바꿔줘",
             "constraints": ["인물 유지"],
             "avoid": ["워터마크"],
@@ -71,7 +71,7 @@ def test_edit_plan_explanations_require_korean() -> None:
 
 
 @pytest.mark.parametrize("legacy_field", ["model", "quality", "size"])
-def test_generate_contract_rejects_image_api_only_fields(legacy_field: str) -> None:
+def test_generate_contract_rejects_renderer_owned_fields(legacy_field: str) -> None:
     with pytest.raises(ValidationError):
         GenerateAIParameters.model_validate(
             {
@@ -82,9 +82,9 @@ def test_generate_contract_rejects_image_api_only_fields(legacy_field: str) -> N
         )
 
 
-def test_generate_contract_uses_codex_builtin_mode() -> None:
+def test_generate_contract_uses_openai_image_api_mode() -> None:
     parameters = GenerateAIParameters(
         use_case="lighting-weather",
         prompt="날씨 변경",
     )
-    assert parameters.execution_mode == "codex-imagegen-builtin"
+    assert parameters.execution_mode == "openai-image-api"

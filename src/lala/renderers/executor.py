@@ -20,6 +20,7 @@ class ExecutedStep:
     output_path: Path
     output_sha256: str
     engine_version: str
+    renderer_size: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -60,16 +61,19 @@ class ToolExecutor:
                 destination = ensure_within(output_root / "result.png", output_root)
                 result = self.imagegen.edit(source, destination, step.parameters)
                 engine_version = result.adapter_version
+                renderer_size = result.size
                 output_hash = result.sha256
             elif isinstance(step, RemasterStep):
                 destination = workspace.output() if final else workspace.intermediate(step.order)
                 result = self.remaster.render(source, destination, step.parameters)
                 engine_version = result.engine_version
+                renderer_size = None
                 output_hash = result.sha256
             elif isinstance(step, LutStep):
                 destination = workspace.output() if final else workspace.intermediate(step.order)
                 result = self.lut.render(source, destination, step.parameters)
                 engine_version = result.engine_version
+                renderer_size = None
                 output_hash = result.sha256
             else:  # pragma: no cover - discriminated union makes this unreachable
                 raise ExecutionError("알 수 없는 편집 도구입니다.", retryable=False)
@@ -82,6 +86,7 @@ class ToolExecutor:
                     output_path=destination.resolve(),
                     output_sha256=output_hash,
                     engine_version=engine_version,
+                    renderer_size=renderer_size,
                 )
             )
             source = destination.resolve()

@@ -68,7 +68,7 @@ GenerateUseCase = Literal[
 class GenerateAIParameters(StrictModel):
     operation: Literal["edit"] = "edit"
     use_case: GenerateUseCase
-    execution_mode: Literal["codex-imagegen-builtin"] = "codex-imagegen-builtin"
+    execution_mode: Literal["openai-image-api"] = "openai-image-api"
     prompt: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=16000)]
     constraints: list[
         Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=500)]

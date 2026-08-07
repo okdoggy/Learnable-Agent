@@ -1,8 +1,8 @@
-# Codex 내장 imagegen 회귀 fixture
+# Image API 전환용 imagegen 회귀 fixture
 
-이 디렉터리의 두 PNG는 사용자 이미지가 아닌 테스트 전용 합성 자료다. Codex의 `$imagegen`
-내장 도구로 생성·편집한 뒤 프로젝트에 복사했으며 Image API CLI와 `OPENAI_API_KEY`를 사용하지
-않았다.
+이 디렉터리의 두 PNG는 사용자 이미지가 아닌 테스트 전용 합성 자료다. 과거 Codex `$imagegen`으로
+생성·편집한 provenance를 유지하며, 현재 OpenAI Image API adapter의 입력 fixture와 metadata
+회귀 검사에만 사용한다.
 
 ## 파일
 
