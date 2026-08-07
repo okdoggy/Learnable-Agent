@@ -189,3 +189,17 @@ def test_hermes_planner_keeps_original_large_image_bytes_within_configured_cap(
     assert 10 * 1024 * 1024 < payload_sizes[0] <= 40 * 1024 * 1024
     assert image_urls[0].startswith("data:image/png;base64,")
     assert base64.b64decode(image_urls[0].split(",", 1)[1]) == source.read_bytes()
+
+
+def test_production_prompt_requires_exposure_diagnosis_before_remaster_brightness() -> None:
+    prompt = (
+        Path(__file__).resolve().parents[2]
+        / "skills"
+        / "lala-coordinator"
+        / "references"
+        / "planner-prompt.md"
+    ).read_text(encoding="utf-8")
+
+    assert "전문가 수준" in prompt
+    assert "밝기 상승의 지시로 해석하지 않는다" in prompt
+    assert "brightness는 노출 부족이라는 이미지 근거가 있을 때만" in prompt

@@ -8,6 +8,7 @@ from lala.domain.errors import LalaError
 from lala.domain.models import EditPlan, GenerateAIStep, LutStep, RemasterStep
 from lala.domain.validation import PlanRuntimeValidator
 from lala.hermes.planner import Planner
+from lala.knowledge.technical import TechnicalLibraryRepository
 from lala.observability.audit import audit_event
 from lala.observability.metrics import METRICS
 from lala.renderers.executor import ToolExecutor
@@ -58,7 +59,9 @@ class SlackCoordinator:
                 tools=[step.tool for step in plan.steps],
                 latency_ms=round((time.monotonic() - started) * 1000, 2),
             )
-            return SlackResponse(request_id, plan, format_slack_plan(plan), None)
+            return SlackResponse(
+                request_id, plan, format_slack_plan(plan, library=self.validator.library), None
+            )
         try:
             report = self.executor.execute(plan)
         except LalaError as exc:
@@ -75,7 +78,7 @@ class SlackCoordinator:
                 exception_type=type(exc).__name__,
             )
         else:
-            message = format_slack_plan(plan)
+            message = format_slack_plan(plan, library=self.validator.library)
             for step in report.steps:
                 if step.tool == "generate_ai" and step.renderer_size:
                     message += f"\n\n실행 설정\n- Generate AI 출력 크기: {step.renderer_size}"
@@ -108,7 +111,7 @@ class SlackCoordinator:
             retryable=retryable,
             latency_ms=round((time.monotonic() - started) * 1000, 2),
         )
-        message = format_slack_plan(plan)
+        message = format_slack_plan(plan, library=self.validator.library)
         message += (
             "\n\n실행 결과\n"
             f"편집 실행에 실패했습니다: {error_message}\n"
@@ -118,7 +121,7 @@ class SlackCoordinator:
         return SlackResponse(request_id, plan, message, None, error_message)
 
 
-def format_slack_plan(plan: EditPlan) -> str:
+def format_slack_plan(plan: EditPlan, *, library: TechnicalLibraryRepository | None = None) -> str:
     tool_names = {"remaster": "Remaster", "lut": "LUT", "generate_ai": "Generate AI"}
     lines = [f"추천 도구: {' → '.join(tool_names[step.tool] for step in plan.steps)}", "", "설정"]
     for step in plan.steps:
@@ -159,10 +162,11 @@ def format_slack_plan(plan: EditPlan) -> str:
     lines.extend(["", "추천 이유", plan.overall_reason_ko, "", "참고한 technical-library"])
     evidence = {(item.skill_id, item.version) for step in plan.steps for item in step.evidence}
     if evidence:
-        lines.extend(
-            f"- technical-library/{technical_id} v{version}"
-            for technical_id, version in sorted(evidence)
-        )
+        for technical_id, version in sorted(evidence):
+            reference = f"- technical-library/{technical_id} v{version}"
+            if library is not None:
+                reference += f": {library.get_note(technical_id).title_ko}"
+            lines.append(reference)
     else:
         lines.append("- 현재 요청에 적용 가능한 active technical-library 문서 없음")
     if plan.warnings_ko:

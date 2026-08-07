@@ -11,9 +11,7 @@ def test_knowledge_directories_are_always_bound_to_project_root(
     project_root = tmp_path / "project"
     hermes_temp = tmp_path / "hermes-session"
     monkeypatch.setenv("LALA_RAW_DIR", str(hermes_temp / "raw"))
-    monkeypatch.setenv(
-        "LALA_TECHNICAL_LIBRARY_DIR", str(hermes_temp / "technical-library")
-    )
+    monkeypatch.setenv("LALA_TECHNICAL_LIBRARY_DIR", str(hermes_temp / "technical-library"))
 
     settings = Settings.from_env(project_root)
     settings.ensure_directories()
@@ -35,3 +33,11 @@ def test_settings_load_image_api_configuration(monkeypatch, tmp_path) -> None:
     assert configured.imagegen_model == "gpt-image-2"
     assert configured.imagegen_quality == "low"
     assert configured.imagegen_size == "1024x1024"
+
+
+def test_settings_allows_three_minutes_for_hermes_planning(monkeypatch, tmp_path) -> None:
+    monkeypatch.delenv("HERMES_TIMEOUT_SECONDS", raising=False)
+
+    configured = Settings.from_env(tmp_path)
+
+    assert configured.hermes_timeout_seconds == 300

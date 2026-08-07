@@ -37,7 +37,7 @@ class Settings:
     hermes_base_url: str = "http://127.0.0.1:8642"
     hermes_api_key: str = ""
     hermes_model: str = "hermes-agent"
-    hermes_timeout_seconds: float = 120.0
+    hermes_timeout_seconds: float = 300.0
     hermes_max_attempts: int = 3
     hermes_circuit_failures: int = 5
     hermes_circuit_recovery_seconds: int = 30
@@ -63,9 +63,11 @@ class Settings:
         root = root.expanduser().resolve()
         var_dir = Path(os.getenv("LALA_VAR_DIR", str(root / "var"))).expanduser().resolve()
         output_dir = Path(os.getenv("LALA_OUTPUT_DIR", str(root / "output"))).expanduser().resolve()
-        slack_cache_dir = Path(
-            os.getenv("LALA_SLACK_CACHE_DIR", str(root / "var" / "slack-cache"))
-        ).expanduser().resolve()
+        slack_cache_dir = (
+            Path(os.getenv("LALA_SLACK_CACHE_DIR", str(root / "var" / "slack-cache")))
+            .expanduser()
+            .resolve()
+        )
         # 수집 지식은 Hermes의 세션/임시 작업공간과 분리된 프로젝트 자산이다.
         # 외부 환경변수로 이 두 경로를 덮어쓰지 않고 프로젝트 루트에 고정한다.
         raw_dir = (root / "raw").resolve()
@@ -114,7 +116,7 @@ class Settings:
             hermes_model=os.getenv("HERMES_MODEL", "hermes-agent"),
             planner_prompt_path=planner_prompt_path,
             parameter_registry_path=(root / "config" / "parameter-registry.yaml").resolve(),
-            hermes_timeout_seconds=float(os.getenv("HERMES_TIMEOUT_SECONDS", 120)),
+            hermes_timeout_seconds=float(os.getenv("HERMES_TIMEOUT_SECONDS", 300)),
             hermes_max_attempts=int(os.getenv("HERMES_MAX_ATTEMPTS", 3)),
             hermes_circuit_failures=int(os.getenv("HERMES_CIRCUIT_FAILURES", 5)),
             hermes_circuit_recovery_seconds=int(os.getenv("HERMES_CIRCUIT_RECOVERY_SECONDS", 30)),

@@ -10,7 +10,8 @@
 4. 제공된 활성 technical library 문서 전문을 검토하여 현재 이미지와 요청에 가장 적합한 문서를 선택하고, 그 기술 절차를 계획의 근거로 사용한다. 모든 이미지 보정·편집 계획은 실제로 제공되어 읽은 active 문서의 ID와 version을 evidence에 기록한다. 현재 요청을 뒷받침할 active 문서가 없으면 근거 없는 계획을 만들지 말고 그 사실을 명확히 알린다.
 5. 제공된 renderer capability와 parameter calibration registry를 읽고 기술 절차가 도구의 전역/국소 범위에서 실제로 가능한지 먼저 확인한다.
 6. Remaster와 LUT의 모든 파라미터는 이미지 상태, 사용자 의도, 읽은 근거와 calibration의 실제 엔진 반응을 연결해 정한다. calibration은 보수적 출발 범위와 상호작용 경고이며 고정 프리셋이나 단어→수치 규칙이 아니다.
-7. capability가 부분 지원이면 무리하게 같은 효과라고 간주하지 말고 다른 도구를 비교하거나 낮은 confidence와 구체적 warning을 남긴다.
+7. “전문가 수준”·“고급 보정” 같은 품질 표현을 밝기 상승의 지시로 해석하지 않는다. Remaster를 고르기 전 이미지의 실제 노출, 히스토그램, shadow/highlight/black/white clip 비율과 피사체의 중요한 세부를 함께 진단한다. brightness는 노출 부족이라는 이미지 근거가 있을 때만 비영(0이 아닌) 값으로 정하고, 이미 적정 노출이거나 밝은 사진은 0을 유지한다. 이때 필요한 경우에도 전역 밝기보다 highlights, shadows, contrast 등 실제로 문제가 있는 명도 구간을 우선 비교하고, `reason_ko`에 진단 근거와 과보정 위험을 구체적으로 적는다.
+8. capability가 부분 지원이면 무리하게 같은 효과라고 간주하지 말고 다른 도구를 비교하거나 낮은 confidence와 구체적 warning을 남긴다.
 8. Generate AI가 필요하면 요청하지 않은 창작을 추가하지 말고 변경 대상과 보존 대상을 명시한다. 실행 모드는 `openai-image-api`, 출력은 PNG다. Slack 요청에서는 renderer가 입력 이미지 종횡비에 가장 가까운 지원 1K 크기(`1024x1024`, `1536x1024`, `1024x1536`)를 선택하므로, 구도와 종횡비를 유지하라고 보존 조건에 명시한다.
 9. 선택 이유는 한국어로 구체적으로 쓰고, 불확실성은 confidence와 warnings에 드러낸다.
 10. 실제 서비스 계획은 원본과 결과의 사후 vision 비교를 전제로 하지 않는다. 실행 전 capability와 calibration으로 보수적으로 결정한다.
