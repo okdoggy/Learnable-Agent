@@ -6,13 +6,13 @@ from lala.domain.models import (
     EditPlan,
     GenerateAIParameters,
     GenerateAIStep,
-    RemasterParameters,
-    RemasterStep,
+    LutParameters,
+    LutStep,
 )
 from lala.renderers.inspection import ImageInspection
 
 
-class StaticRemasterPlanner:
+class StaticLutPlanner:
     """A fixed LLM response stand-in; it performs no prompt interpretation."""
 
     def plan(
@@ -28,18 +28,23 @@ class StaticRemasterPlanner:
             request_id=request_id,
             summary_ko="원본 구도를 유지하며 어두운 영역을 자연스럽게 보정합니다.",
             steps=[
-                RemasterStep(
+                LutStep(
                     order=1,
-                    tool="remaster",
-                    parameters=RemasterParameters(brightness=8, shadows=16, sharpness=3),
-                    reason_ko="새 픽셀 생성 없이 밝기와 그림자 세부를 회복합니다.",
+                    tool="lut",
+                    parameters=LutParameters(
+                        preset="documentary", lut_intensity=0.65, grain_amount=0, halation=0
+                    ),
+                    reason_ko="새 픽셀 생성 없이 전역 톤과 색감을 보수적으로 정리합니다.",
                     evidence=[],
                 )
             ],
-            overall_reason_ko="결정론적 기본 보정으로 요청을 충족할 수 있습니다.",
+            overall_reason_ko="결정론적 LUT 보정으로 요청을 충족할 수 있습니다.",
             confidence=0.6,
             warnings_ko=["근거 technical 문서 없음"],
         )
+
+
+StaticRemasterPlanner = StaticLutPlanner
 
 
 class StaticGeneratePlanner:

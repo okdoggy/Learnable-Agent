@@ -8,12 +8,12 @@ from typing import Literal
 
 import numpy as np
 import yaml
-from PIL import Image, ImageOps
+from PIL import Image, ImageFilter, ImageOps
 
 from lala.domain.errors import LalaError
 from lala.domain.models import LutParameters
 from lala.renderers.image_io import sha256_file
-from lala.renderers.remaster import RenderResult, _linear_to_srgb, _luminance, _srgb_to_linear
+from lala.renderers.remaster import RenderResult, _luminance, _srgb_to_linear
 from lala.storage.workspace import ensure_within
 from lala.text import TextEncodingError, read_utf8_lf
 
@@ -112,7 +112,7 @@ class LutRenderer:
         self.catalog = catalog
 
     def render(self, source: Path, destination: Path, parameters: LutParameters) -> RenderResult:
-        entry = self.catalog.resolve(parameters.lut_id)
+        entry = self.catalog.resolve(parameters.preset)
         cube = parse_cube(entry.path)
         destination.parent.mkdir(parents=True, exist_ok=True)
         with Image.open(source) as opened:
@@ -122,20 +122,11 @@ class LutRenderer:
             alpha = image.getchannel("A") if "A" in image.getbands() else None
             rgb = np.asarray(image.convert("RGB"), dtype=np.float32) / 255.0
         transformed = apply_cube(rgb, cube)
-        if parameters.preserve_luminance:
-            original_linear = _srgb_to_linear(rgb)
-            transformed_linear = _srgb_to_linear(np.clip(transformed, 0.0, 1.0))
-            original_luminance = _luminance(original_linear)
-            transformed_luminance = _luminance(transformed_linear)
-            scale = np.divide(
-                original_luminance,
-                transformed_luminance,
-                out=np.ones_like(original_luminance),
-                where=transformed_luminance > 1e-5,
-            )
-            transformed = _linear_to_srgb(np.clip(transformed_linear * scale[..., None], 0.0, 1.0))
-        strength = parameters.strength / 100.0
-        output = rgb * (1.0 - strength) + transformed * strength
+        output = rgb * (1.0 - parameters.lut_intensity) + transformed * parameters.lut_intensity
+        if parameters.skin_protection and parameters.preset != "film_noir":
+            output = _protect_skin(rgb, output)
+        output = _apply_halation(output, parameters.halation)
+        output = _apply_grain(output, parameters.grain_amount)
         encoded = Image.fromarray(
             np.clip(np.rint(output * 255.0), 0, 255).astype(np.uint8), mode="RGB"
         )
@@ -151,6 +142,42 @@ class LutRenderer:
             width=encoded.width,
             height=encoded.height,
         )
+
+
+def _protect_skin(original: np.ndarray, graded: np.ndarray) -> np.ndarray:
+    red, green, blue = np.moveaxis(original, -1, 0)
+    maximum = np.maximum.reduce((red, green, blue))
+    minimum = np.minimum.reduce((red, green, blue))
+    skin = (
+        (red > 0.18)
+        & (red > green * 1.03)
+        & (green > blue * 1.03)
+        & ((maximum - minimum) > 0.08)
+    )[..., None]
+    return np.where(skin, original * 0.35 + graded * 0.65, graded)
+
+
+def _apply_halation(rgb: np.ndarray, amount: float) -> np.ndarray:
+    if amount <= 0:
+        return rgb
+    highlights = np.clip((_luminance(_srgb_to_linear(rgb)) - 0.65) / 0.35, 0.0, 1.0)
+    mask_image = Image.fromarray(np.rint(highlights * 255).astype(np.uint8))
+    mask = mask_image.filter(ImageFilter.GaussianBlur(6))
+    bloom = np.asarray(mask, dtype=np.float32) / 255.0
+    output = rgb.copy()
+    output[..., 0] += bloom * amount * 0.18
+    output[..., 1] += bloom * amount * 0.035
+    return np.clip(output, 0.0, 1.0)
+
+
+def _apply_grain(rgb: np.ndarray, amount: float) -> np.ndarray:
+    if amount <= 0:
+        return rgb
+    shadow_weight = 1.0 - _luminance(_srgb_to_linear(rgb))
+    coordinates = np.indices(rgb.shape[:2], dtype=np.uint32)
+    noise = ((coordinates[0] * 1103515245 + coordinates[1] * 12345) & 0xFFFF).astype(np.float32)
+    noise = (noise / 65535.0 - 0.5)[..., None]
+    return np.clip(rgb + noise * shadow_weight[..., None] * amount * 0.08, 0.0, 1.0)
 
 
 def parse_cube(path: Path) -> CubeLut:

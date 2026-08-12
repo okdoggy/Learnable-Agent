@@ -7,7 +7,7 @@ summary_ko: 하늘·지상 분리 촬영, 선행 노이즈 제거, 별 보존형
 version: 0.1.1
 status: candidate
 supported_tools:
-- remaster
+- lut
 - generate_ai
 confidence: 0.72
 raw_scenario_ids:

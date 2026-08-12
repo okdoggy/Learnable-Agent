@@ -7,7 +7,7 @@ import pytest
 from PIL import Image
 
 from lala.domain.errors import LalaError
-from lala.domain.models import EditPlan, RemasterParameters, RemasterStep, SkillEvidence
+from lala.domain.models import EditPlan, LutParameters, LutStep, SkillEvidence
 from lala.domain.validation import PlanRuntimeValidator
 from lala.hermes.slack import SlackCoordinator, format_slack_plan
 from lala.knowledge.technical import TechnicalLibraryRepository
@@ -99,7 +99,7 @@ async def test_process_slack_image_executes_complete_edit_in_one_mcp_call(settin
     assert result["execution_error"] is None
     output_path = Path(result["output_path"])
     assert output_path.is_file()
-    assert "추천 도구: Remaster" in result["message_ko"]
+    assert "추천 도구: LUT" in result["message_ko"]
 
 
 @pytest.mark.asyncio
@@ -147,11 +147,11 @@ def test_format_slack_plan_includes_referenced_technical_document_title() -> Non
         request_id="req_document_title",
         summary_ko="그림자 세부를 보수적으로 회복합니다.",
         steps=[
-            RemasterStep(
+            LutStep(
                 order=1,
-                tool="remaster",
-                parameters=RemasterParameters(shadows=4),
-                reason_ko="암부 세부가 부족한 상태를 보수적으로 조정합니다.",
+                tool="lut",
+                parameters=LutParameters(preset="documentary", grain_amount=0, halation=0),
+                reason_ko="전역 톤과 색감을 보수적으로 조정합니다.",
                 evidence=[SkillEvidence(skill_id="shadow-recovery", version="1.0.0")],
             )
         ],

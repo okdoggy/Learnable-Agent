@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from lala.domain.errors import LalaError
-from lala.domain.models import EditPlan, GenerateAIStep, LutStep, RemasterStep
+from lala.domain.models import EditPlan, GenerateAIStep, LutStep
 from lala.domain.validation import PlanRuntimeValidator
 from lala.hermes.planner import Planner
 from lala.knowledge.technical import TechnicalLibraryRepository
@@ -122,33 +122,18 @@ class SlackCoordinator:
 
 
 def format_slack_plan(plan: EditPlan, *, library: TechnicalLibraryRepository | None = None) -> str:
-    tool_names = {"remaster": "Remaster", "lut": "LUT", "generate_ai": "Generate AI"}
+    tool_names = {"lut": "LUT", "generate_ai": "Generate AI"}
     lines = [f"추천 도구: {' → '.join(tool_names[step.tool] for step in plan.steps)}", "", "설정"]
     for step in plan.steps:
         lines.append(f"{step.order}. {tool_names[step.tool]}")
-        if isinstance(step, RemasterStep):
-            labels = {
-                "brightness": "밝기",
-                "contrast": "대비",
-                "highlights": "하이라이트",
-                "shadows": "그림자",
-                "saturation": "채도",
-                "temperature": "색온도",
-                "tint": "틴트",
-                "sharpness": "선명도",
-                "denoise": "노이즈 감소",
-                "vignette": "비네트",
-            }
-            for key, value in step.parameters.model_dump().items():
-                if value:
-                    sign = "+" if isinstance(value, int) and value > 0 else ""
-                    lines.append(f"- {labels[key]}: {sign}{value}")
-        elif isinstance(step, LutStep):
+        if isinstance(step, LutStep):
             lines.extend(
                 [
-                    f"- LUT: {step.parameters.lut_id}",
-                    f"- 강도: {step.parameters.strength}",
-                    f"- 휘도 보존: {'예' if step.parameters.preserve_luminance else '아니요'}",
+                    f"- LUT: {step.parameters.preset}",
+                    f"- 강도: {step.parameters.lut_intensity:.2f}",
+                    f"- 피부 보호: {'예' if step.parameters.skin_protection else '아니요'}",
+                    f"- 그레인: {step.parameters.grain_amount:.2f}",
+                    f"- 할레이션: {step.parameters.halation:.2f}",
                 ]
             )
         elif isinstance(step, GenerateAIStep):

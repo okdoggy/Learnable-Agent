@@ -5,11 +5,10 @@ from pathlib import Path
 
 from lala.config import Settings
 from lala.domain.errors import ExecutionError
-from lala.domain.models import EditPlan, GenerateAIStep, LutStep, RemasterStep
+from lala.domain.models import EditPlan, GenerateAIStep, LutStep
 from lala.renderers.image_io import sha256_file
 from lala.renderers.imagegen import ImagegenRunner
 from lala.renderers.lut import LutRenderer
-from lala.renderers.remaster import RemasterRenderer
 from lala.storage.workspace import WorkspaceManager, ensure_within
 
 
@@ -37,13 +36,13 @@ class ToolExecutor:
         *,
         settings: Settings,
         workspaces: WorkspaceManager,
-        remaster: RemasterRenderer,
         lut: LutRenderer,
         imagegen: ImagegenRunner,
+        remaster: object | None = None,
     ) -> None:
+        del remaster
         self.settings = settings
         self.workspaces = workspaces
-        self.remaster = remaster
         self.lut = lut
         self.imagegen = imagegen
 
@@ -62,12 +61,6 @@ class ToolExecutor:
                 result = self.imagegen.edit(source, destination, step.parameters)
                 engine_version = result.adapter_version
                 renderer_size = result.size
-                output_hash = result.sha256
-            elif isinstance(step, RemasterStep):
-                destination = workspace.output() if final else workspace.intermediate(step.order)
-                result = self.remaster.render(source, destination, step.parameters)
-                engine_version = result.engine_version
-                renderer_size = None
                 output_hash = result.sha256
             elif isinstance(step, LutStep):
                 destination = workspace.output() if final else workspace.intermediate(step.order)

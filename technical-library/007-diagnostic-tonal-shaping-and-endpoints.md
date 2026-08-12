@@ -7,7 +7,7 @@ summary_ko: 색을 잠시 배제한 명도 진단과 클리핑 확인으로 톤 
 version: 1.0.0
 status: active
 supported_tools:
-- remaster
+- lut
 confidence: 0.9
 raw_scenario_ids:
 - raw-20260807-endclip12

@@ -7,7 +7,6 @@ summary_ko: 기본 색을 안정시킨 뒤 피사체·배경·명도 영역 또�
 version: 1.0.2
 status: active
 supported_tools:
-- remaster
 - lut
 - generate_ai
 confidence: 0.95

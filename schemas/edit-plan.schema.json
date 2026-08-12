@@ -114,34 +114,47 @@
     "LutParameters": {
       "additionalProperties": false,
       "properties": {
-        "lut_id": {
+        "preset": {
           "maxLength": 128,
           "minLength": 3,
           "pattern": "^[a-zA-Z0-9._-]+$",
-          "title": "Lut Id",
+          "title": "Preset",
           "type": "string"
         },
-        "strength": {
-          "default": 100,
-          "maximum": 100,
-          "minimum": 0,
-          "title": "Strength",
-          "type": "integer"
+        "lut_intensity": {
+          "default": 0.85,
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Lut Intensity",
+          "type": "number"
         },
-        "interpolation": {
-          "const": "trilinear",
-          "default": "trilinear",
-          "title": "Interpolation",
-          "type": "string"
-        },
-        "preserve_luminance": {
+        "skin_protection": {
           "default": true,
-          "title": "Preserve Luminance",
+          "title": "Skin Protection",
+          "type": "boolean"
+        },
+        "grain_amount": {
+          "default": 0.3,
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Grain Amount",
+          "type": "number"
+        },
+        "halation": {
+          "default": 0.2,
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Halation",
+          "type": "number"
+        },
+        "use_aces": {
+          "default": true,
+          "title": "Use Aces",
           "type": "boolean"
         }
       },
       "required": [
-        "lut_id"
+        "preset"
       ],
       "title": "LutParameters",
       "type": "object"
@@ -186,125 +199,6 @@
         "parameters"
       ],
       "title": "LutStep",
-      "type": "object"
-    },
-    "RemasterParameters": {
-      "additionalProperties": false,
-      "properties": {
-        "brightness": {
-          "default": 0,
-          "maximum": 100,
-          "minimum": -100,
-          "title": "Brightness",
-          "type": "integer"
-        },
-        "contrast": {
-          "default": 0,
-          "maximum": 100,
-          "minimum": -100,
-          "title": "Contrast",
-          "type": "integer"
-        },
-        "highlights": {
-          "default": 0,
-          "maximum": 100,
-          "minimum": -100,
-          "title": "Highlights",
-          "type": "integer"
-        },
-        "shadows": {
-          "default": 0,
-          "maximum": 100,
-          "minimum": -100,
-          "title": "Shadows",
-          "type": "integer"
-        },
-        "saturation": {
-          "default": 0,
-          "maximum": 100,
-          "minimum": -100,
-          "title": "Saturation",
-          "type": "integer"
-        },
-        "temperature": {
-          "default": 0,
-          "maximum": 100,
-          "minimum": -100,
-          "title": "Temperature",
-          "type": "integer"
-        },
-        "tint": {
-          "default": 0,
-          "maximum": 100,
-          "minimum": -100,
-          "title": "Tint",
-          "type": "integer"
-        },
-        "sharpness": {
-          "default": 0,
-          "maximum": 100,
-          "minimum": 0,
-          "title": "Sharpness",
-          "type": "integer"
-        },
-        "denoise": {
-          "default": 0,
-          "maximum": 100,
-          "minimum": 0,
-          "title": "Denoise",
-          "type": "integer"
-        },
-        "vignette": {
-          "default": 0,
-          "maximum": 100,
-          "minimum": -100,
-          "title": "Vignette",
-          "type": "integer"
-        }
-      },
-      "title": "RemasterParameters",
-      "type": "object"
-    },
-    "RemasterStep": {
-      "additionalProperties": false,
-      "properties": {
-        "order": {
-          "maximum": 16,
-          "minimum": 1,
-          "title": "Order",
-          "type": "integer"
-        },
-        "reason_ko": {
-          "maxLength": 4000,
-          "minLength": 1,
-          "pattern": "[가-힣]",
-          "title": "Reason Ko",
-          "type": "string"
-        },
-        "evidence": {
-          "items": {
-            "$ref": "#/$defs/SkillEvidence"
-          },
-          "maxItems": 32,
-          "title": "Evidence",
-          "type": "array"
-        },
-        "tool": {
-          "const": "remaster",
-          "title": "Tool",
-          "type": "string"
-        },
-        "parameters": {
-          "$ref": "#/$defs/RemasterParameters"
-        }
-      },
-      "required": [
-        "order",
-        "reason_ko",
-        "tool",
-        "parameters"
-      ],
-      "title": "RemasterStep",
       "type": "object"
     },
     "SkillEvidence": {
@@ -358,15 +252,11 @@
         "discriminator": {
           "mapping": {
             "generate_ai": "#/$defs/GenerateAIStep",
-            "lut": "#/$defs/LutStep",
-            "remaster": "#/$defs/RemasterStep"
+            "lut": "#/$defs/LutStep"
           },
           "propertyName": "tool"
         },
         "oneOf": [
-          {
-            "$ref": "#/$defs/RemasterStep"
-          },
           {
             "$ref": "#/$defs/LutStep"
           },

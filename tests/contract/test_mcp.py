@@ -16,7 +16,7 @@ async def test_mcp_exposes_only_scoped_llm_and_renderer_tools(settings: Settings
         "process_slack_image",
         "inspect_image",
         "validate_edit_plan",
-        "apply_remaster",
+
         "apply_lut",
         "apply_generate_ai",
         "list_raw_scenarios",
@@ -26,9 +26,9 @@ async def test_mcp_exposes_only_scoped_llm_and_renderer_tools(settings: Settings
         "read_technical_note",
         "publish_technical_note",
     }
-    remaster_schema = by_name["apply_remaster"].inputSchema
-    assert "brightness" in remaster_schema["$defs"]["RemasterParameters"]["properties"]
-    assert "path" not in remaster_schema["properties"]
+    lut_schema = by_name["apply_lut"].inputSchema
+    assert "preset" in lut_schema["$defs"]["LutParameters"]["properties"]
+    assert "path" not in lut_schema["properties"]
     slack_schema = by_name["process_slack_image"].inputSchema
     assert slack_schema["properties"]["mode"]["default"] == "edit"
     assert slack_schema["properties"]["mode"]["enum"] == ["recommend", "edit"]

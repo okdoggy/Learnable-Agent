@@ -15,10 +15,12 @@ export interface RemasterParameters {
 }
 
 export interface LutParameters {
-  lut_id: string;
-  strength: number;
-  interpolation: "trilinear";
-  preserve_luminance: boolean;
+  preset: string;
+  lut_intensity: number;
+  skin_protection: boolean;
+  grain_amount: number;
+  halation: number;
+  use_aces: boolean;
 }
 
 export interface GenerateAIParameters {

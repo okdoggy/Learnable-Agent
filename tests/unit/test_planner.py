@@ -25,13 +25,13 @@ def _hermes_response(request_id: str) -> dict[str, object]:
         "steps": [
             {
                 "order": 1,
-                "tool": "remaster",
-                "parameters": {"brightness": 8},
-                "reason_ko": "새 픽셀을 만들지 않고 어두운 영역을 회복합니다.",
+                "tool": "lut",
+                "parameters": {"preset": "documentary", "lut_intensity": 0.65},
+                "reason_ko": "새 픽셀을 만들지 않고 전역 톤을 정리합니다.",
                 "evidence": [],
             }
         ],
-        "overall_reason_ko": "결정론적 기본 보정으로 요청을 충족할 수 있습니다.",
+        "overall_reason_ko": "결정론적 LUT 보정으로 요청을 충족할 수 있습니다.",
         "confidence": 0.6,
         "warnings_ko": ["근거 스킬 없음"],
     }
@@ -67,7 +67,7 @@ def test_hermes_planner_performs_one_schema_correction(
                 "summary_ko": "밝은 영역을 보존하며 어두운 부분의 세부를 회복한다.",
                 "version": "1.0.0",
                 "status": "active",
-                "supported_tools": ["remaster"],
+                "supported_tools": ["lut"],
                 "confidence": 0.8,
                 "raw_scenario_ids": ["raw-20260802-abc123", "raw-20260802-def456"],
                 "source_urls": ["https://example.com/a", "https://another.example/b"],
@@ -191,7 +191,7 @@ def test_hermes_planner_keeps_original_large_image_bytes_within_configured_cap(
     assert base64.b64decode(image_urls[0].split(",", 1)[1]) == source.read_bytes()
 
 
-def test_production_prompt_requires_exposure_diagnosis_before_remaster_brightness() -> None:
+def test_production_prompt_requires_lut_before_generate_ai() -> None:
     prompt = (
         Path(__file__).resolve().parents[2]
         / "skills"
@@ -200,6 +200,5 @@ def test_production_prompt_requires_exposure_diagnosis_before_remaster_brightnes
         / "planner-prompt.md"
     ).read_text(encoding="utf-8")
 
-    assert "전문가 수준" in prompt
-    assert "밝기 상승의 지시로 해석하지 않는다" in prompt
-    assert "brightness는 노출 부족이라는 이미지 근거가 있을 때만" in prompt
+    assert "Vibe Editing 호환 LUT를 기본으로 선택" in prompt
+    assert "LUT만으로 해결되지 않는" in prompt

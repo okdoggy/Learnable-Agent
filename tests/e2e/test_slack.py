@@ -52,7 +52,7 @@ def test_slack_returns_explanation_and_existing_result(settings: Settings) -> No
 
     assert response.output_path is not None
     assert response.output_path.is_file()
-    assert "추천 도구: Remaster" in response.message_ko
+    assert "추천 도구: LUT" in response.message_ko
     assert "추천 이유" in response.message_ko
     assert str(response.output_path) in response.message_ko
 

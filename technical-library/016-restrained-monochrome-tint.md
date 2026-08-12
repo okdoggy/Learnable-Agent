@@ -7,7 +7,6 @@ summary_ko: 명도 구조를 먼저 보존한 뒤 채도를 낮추고 한 가지
 version: 0.1.0
 status: candidate
 supported_tools:
-- remaster
 - lut
 confidence: 0.68
 raw_scenario_ids:

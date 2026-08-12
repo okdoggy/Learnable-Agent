@@ -2,7 +2,7 @@
 
 `lala`는 Hermes Agent를 기반으로 Vibe Editing Tool과 Slack에 동일한 이미지 편집 계획을
 제공하는 서비스입니다. Vibe에는 검증된 `EditPlan 1.0`을 반환하고, Slack에서는 같은 계획을
-Remaster/LUT/Generate AI 렌더러로 실행해 결과 파일까지 전달합니다.
+Vibe Editing 호환 LUT/Generate AI 렌더러로 실행해 결과 파일까지 전달합니다.
 
 ## 빠른 시작
 
@@ -30,7 +30,7 @@ LALA_IMAGEGEN_OPENAI_API_KEY=실제_OpenAI_API_key
 
 `.env`는 Git에서 제외되며 실제 key를 `.env.example`, YAML, 코드 또는 로그에 넣지 않습니다.
 설정 후 Hermes gateway와 `lala-tools` MCP 프로세스를 재시작해야 합니다. 이 변수는 `Settings`가 로드한 뒤
-`src/lala/renderers/imagegen.py`만 소비하며 Hermes planner, Remaster, LUT와 cron에는 전달하지 않습니다.
+`src/lala/renderers/imagegen.py`만 소비하며 Hermes planner, LUT와 cron에는 전달하지 않습니다.
 
 Swagger UI는 `/docs`, ReDoc은 `/redoc`, OpenAPI JSON은 `/openapi.json`, Vibe 런타임 계약은
 `/v1/capabilities`에서 제공합니다.

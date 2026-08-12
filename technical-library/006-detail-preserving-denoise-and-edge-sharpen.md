@@ -7,7 +7,7 @@ summary_ko: 대비·선명화 전에 노이즈를 절제해 한 번 처리하고
 version: 1.0.2
 status: active
 supported_tools:
-- remaster
+- lut
 confidence: 0.94
 raw_scenario_ids:
 - raw-20260803-fogdepth01
