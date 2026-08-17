@@ -32,6 +32,7 @@ class LutCalibrationPolicy:
         self._atmospheric_evidence_id: str | None = None
         self._max_grain_amount: float | None = None
         self._max_halation: float | None = None
+        self._forbid_pre_lut_lift_and_rolloff_stack = False
         self._load()
 
     def validate(self, plan: EditPlan, library: TechnicalLibraryRepository) -> None:
@@ -60,6 +61,19 @@ class LutCalibrationPolicy:
                 raise PlanValidationError("grain_amount가 calibration 시작 상한을 초과했습니다.")
             if self._max_halation is not None and parameters.halation > self._max_halation:
                 raise PlanValidationError("halation이 calibration 시작 상한을 초과했습니다.")
+        for index, step in enumerate(plan.steps[:-1]):
+            if isinstance(step, RemasterStep) and isinstance(plan.steps[index + 1], LutStep):
+                self._validate_pre_lut_tonal_guard(step)
+
+    def _validate_pre_lut_tonal_guard(self, step: RemasterStep) -> None:
+        if not self._forbid_pre_lut_lift_and_rolloff_stack:
+            return
+        parameters = step.parameters
+        if parameters.brightness > 0 and parameters.shadows > 0 and parameters.highlights < 0:
+            raise PlanValidationError(
+                "pre-LUT remaster는 brightness 상승, shadow lift, highlight roll-off를 "
+                "동시에 적용할 수 없습니다. 검정점과 중간톤 분리를 훼손할 수 있습니다."
+            )
 
     def _load(self) -> None:
         try:
@@ -109,6 +123,30 @@ class LutCalibrationPolicy:
         self._atmospheric_evidence_id = evidence_id
         self._max_grain_amount = _bounded_fraction(atmosphere, "max_grain_amount")
         self._max_halation = _bounded_fraction(atmosphere, "max_halation")
+        remaster = calibration.get("remaster_parameter_selection")
+        if remaster is None:
+            return
+        if not isinstance(remaster, dict):
+            raise LalaError(
+                "CALIBRATION_REGISTRY_INVALID",
+                "remaster_parameter_selection 형식이 올바르지 않습니다.",
+                False,
+            )
+        guard = remaster.get("pre_lut_tonal_guard")
+        if not isinstance(guard, dict):
+            raise LalaError(
+                "CALIBRATION_REGISTRY_INVALID",
+                "pre_lut_tonal_guard 형식이 올바르지 않습니다.",
+                False,
+            )
+        forbid_stack = guard.get("forbid_lift_and_rolloff_stack")
+        if not isinstance(forbid_stack, bool):
+            raise LalaError(
+                "CALIBRATION_REGISTRY_INVALID",
+                "pre_lut_tonal_guard forbid_lift_and_rolloff_stack 형식이 올바르지 않습니다.",
+                False,
+            )
+        self._forbid_pre_lut_lift_and_rolloff_stack = forbid_stack
 
 
 def _bounded_fraction(policy: dict[object, object], key: str) -> float:
