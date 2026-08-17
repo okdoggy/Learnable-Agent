@@ -21,7 +21,7 @@ Vibe 브라우저에서 lala를 직접 호출하지 않는다. Vercel Route Hand
 
 ## 1. 지원 계약 확인
 
-배포 시점에 `/v1/capabilities`를 한 번 조회해 Vibe의 EditPlan·Remaster·LUT 계약과 맞는지 확인한다. 현재 추천 판단기는 항상 `hermes-llm`이며 Generate AI 실행 모드는 `openai-image-api`다. renderer는 `gpt-image-2`, `low`, PNG로 고정되며 입력 종횡비에 가장 가까운 지원 1K 크기(`1024x1024`, `1536x1024`, `1024x1536`)를 선택한다.
+배포 시점에 `/v1/capabilities`를 한 번 조회해 Vibe의 EditPlan·LUT 계약과 맞는지 확인한다. 전역 보정은 `expert_grade` LUT 카탈로그의 preset과 강도·피부 보호·그레인·할레이션 파라미터를 사용한다. 현재 추천 판단기는 항상 `hermes-llm`이며 Generate AI 실행 모드는 `openai-image-api`다. renderer는 `gpt-image-2`, `low`, PNG로 고정되며 입력 종횡비에 가장 가까운 지원 1K 크기(`1024x1024`, `1536x1024`, `1024x1536`)를 선택한다.
 
 ## 2. 업로드 URL 발급
 
@@ -39,7 +39,7 @@ Vibe 브라우저에서 lala를 직접 호출하지 않는다. Vercel Route Hand
   "client_capabilities": {
     "edit_plan_version": "1.0",
     "remaster_engine_version": "1.0",
-    "lut_catalog_version": "2026-08-02"
+    "lut_catalog_version": "2026-08-12"
   }
 }
 ```

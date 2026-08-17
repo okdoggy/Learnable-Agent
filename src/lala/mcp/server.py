@@ -13,7 +13,6 @@ from lala.domain.models import (
     EditPlan,
     GenerateAIParameters,
     LutParameters,
-    RemasterParameters,
 )
 from lala.domain.validation import PlanRuntimeValidator
 from lala.hermes.planner import build_planner
@@ -26,7 +25,6 @@ from lala.renderers.image_io import ImageAssetValidator, ValidatedImage
 from lala.renderers.imagegen import ImagegenRunner, OpenAIImagegenRunner
 from lala.renderers.inspection import inspect_image as analyze_image
 from lala.renderers.lut import LutCatalog, LutRenderer
-from lala.renderers.remaster import RemasterRenderer
 from lala.storage.database import Database
 from lala.storage.workspace import SAFE_ID, WorkspaceManager, ensure_within
 
@@ -43,7 +41,7 @@ class McpRuntime:
     settings: Settings
     workspaces: WorkspaceManager
     validator: PlanRuntimeValidator
-    remaster: RemasterRenderer
+
     lut: LutRenderer
     imagegen: ImagegenRunner
     raw_store: RawScenarioStore
@@ -91,7 +89,6 @@ class McpRuntime:
                 executor=ToolExecutor(
                     settings=self.settings,
                     workspaces=self.workspaces,
-                    remaster=self.remaster,
                     lut=self.lut,
                     imagegen=self.imagegen,
                 ),
@@ -128,7 +125,6 @@ def build_runtime(settings: Settings, *, imagegen: ImagegenRunner | None = None)
         validator=PlanRuntimeValidator(
             catalog, TechnicalLibraryRepository(settings.technical_library_dir)
         ),
-        remaster=RemasterRenderer(),
         lut=LutRenderer(catalog),
         imagegen=imagegen or OpenAIImagegenRunner(settings),
         raw_store=raw_store,
@@ -216,23 +212,6 @@ def create_mcp(settings: Settings | None = None, *, runtime: McpRuntime | None =
         validated = services.validator.validate(plan)
         return validated.model_dump(mode="json")
 
-    @mcp.tool()
-    def apply_remaster(
-        request_id: str,
-        order: Annotated[int, Field(ge=1, le=16)],
-        parameters: RemasterParameters,
-        final_step: bool = True,
-    ) -> dict[str, Any]:
-        """Apply deterministic Remaster settings inside a request workspace."""
-        workspace = services.workspaces.get(request_id)
-        source = services.source_for_step(request_id, order)
-        destination = workspace.output() if final_step else workspace.intermediate(order)
-        result = services.remaster.render(source, destination, parameters)
-        return {
-            "path": str(result.path),
-            "sha256": result.sha256,
-            "remaster_engine_version": result.engine_version,
-        }
 
     @mcp.tool()
     def apply_lut(

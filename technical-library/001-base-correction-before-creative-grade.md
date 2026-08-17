@@ -7,7 +7,6 @@ summary_ko: 편집 의도를 먼저 정하고 기본 노출·화이트 밸런스
 version: 1.0.1
 status: active
 supported_tools:
-- remaster
 - lut
 confidence: 0.93
 raw_scenario_ids:

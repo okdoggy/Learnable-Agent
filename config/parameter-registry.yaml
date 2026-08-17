@@ -61,8 +61,15 @@ capabilities:
       - "local-warm-cool-separation"
   lut:
     scope: "global"
-    supports: ["approved-global-color-transform"]
-    unsupported: ["semantic-local-masks", "object-local-color-transform"]
+    engine: "expert_grade"
+    supports: ["approved-global-color-transform", "skin-protected-global-grade", "shadow-grain", "highlight-halation"]
+    unsupported: ["semantic-local-masks", "object-local-color-transform", "subject-background-independent-adjustment"]
+    parameters:
+      lut_intensity: "0.0–1.0 원본과 LUT 결과의 블렌드 강도"
+      skin_protection: "인물의 피부 색차 완화; film_noir에는 적용하지 않음"
+      grain_amount: "0.0–1.0, 그림자 가중 필름 그레인"
+      halation: "0.0–1.0, 밝은 영역 붉은 bloom"
+      use_aces: "현재 .cube sRGB 경로에서는 호환용 메타데이터"
   generate_ai:
     scope: "semantic-generative-edit"
     engine:

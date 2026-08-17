@@ -50,7 +50,15 @@ calibration:
         encoding="utf-8",
     )
     (tmp_path / "luts" / "manifest.yaml").write_text(
-        'schema_version: "1.0"\ncatalog_version: "2026-08-02"\nluts: []\n',
+        (
+            'schema_version: "1.0"\ncatalog_version: "2026-08-12"\nluts:\n'
+            '  - id: documentary\n    title: Documentary\n    path: cubes/documentary.cube\n'
+            '    status: approved\n'
+        ),
+        encoding="utf-8",
+    )
+    (tmp_path / "luts" / "cubes" / "documentary.cube").write_text(
+        "LUT_1D_SIZE 2\n0 0 0\n1 1 1\n",
         encoding="utf-8",
     )
     result = Settings.from_env(tmp_path)

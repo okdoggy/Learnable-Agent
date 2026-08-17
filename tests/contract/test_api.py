@@ -51,7 +51,7 @@ def _request(asset_id: str, client_request_id: str = "client-request-123") -> di
         "client_capabilities": {
             "edit_plan_version": "1.0",
             "remaster_engine_version": "1.0",
-            "lut_catalog_version": "2026-08-02",
+            "lut_catalog_version": "2026-08-12",
         },
     }
 
@@ -95,7 +95,7 @@ def test_async_edit_contract_completes_with_valid_plan(
     body = status_response.json()
     assert body["data"]["status"] == "completed"
     assert body["data"]["plan"]["request_id"] == request_id
-    assert body["data"]["plan"]["steps"][0]["tool"] == "remaster"
+    assert body["data"]["plan"]["steps"][0]["tool"] == "lut"
     assert body["error"] is None
 
 
@@ -162,7 +162,7 @@ def test_api_rejects_unsupported_client_contract_version(settings: Settings) -> 
         "client_capabilities": {
             "edit_plan_version": "0.9",
             "remaster_engine_version": "1.0",
-            "lut_catalog_version": "2026-08-02",
+            "lut_catalog_version": "2026-08-12",
         },
     }
 
@@ -203,7 +203,7 @@ def test_startup_requeues_an_interrupted_request(settings: Settings, png_bytes: 
         client_capabilities={
             "edit_plan_version": "1.0",
             "remaster_engine_version": "1.0",
-            "lut_catalog_version": "2026-08-02",
+            "lut_catalog_version": "2026-08-12",
         },
         ttl_seconds=3600,
     )

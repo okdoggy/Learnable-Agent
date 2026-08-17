@@ -7,7 +7,6 @@ summary_ko: 실제 부드러운 빛과 대기감을 기반으로 Clarity·샤프
 version: 1.0.0
 status: active
 supported_tools:
-- remaster
 - lut
 - generate_ai
 confidence: 0.88

@@ -340,8 +340,8 @@ def test_candidate_note_is_rejected_as_plan_evidence(settings: Settings) -> None
             "steps": [
                 {
                     "order": 1,
-                    "tool": "remaster",
-                    "parameters": {},
+                    "tool": "lut",
+                    "parameters": {"preset": "documentary"},
                     "reason_ko": "후보를 확정 근거로 사용하면 안 됩니다.",
                     "evidence": [{"skill_id": "portrait-shadow-recovery", "version": "0.1.0"}],
                 }

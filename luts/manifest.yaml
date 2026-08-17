@@ -1,4 +1,20 @@
 schema_version: "1.0"
-catalog_version: "2026-08-02"
-# 운영 LUT는 출처·라이선스·SHA-256 검토 후 status: approved로 등록합니다.
-luts: []
+catalog_version: "2026-08-12"
+# Vibe Editing 호환 33³ LUT 카탈로그. 모든 LUT는 프로젝트에서 생성·검증한다.
+luts:
+  - {id: teal_orange, title: "Cinematic Teal Orange", status: approved, path: cubes/cinematic_teal_orange.cube, sha256: 6c04ff31afa96529d099c913410f74d33bd642076ce0488c676c58f0c45d6448}
+
+  - {id: fuji_velvia, title: "Fuji Velvia", status: approved, path: cubes/fuji_velvia.cube, sha256: 357496b762aa0cb319705efc4d8567a0f417aaea17dd1edcbc49d0426849ef6f}
+  - {id: matte_fade, title: "Matte Fade", status: approved, path: cubes/matte_fade.cube, sha256: 55a5fdf272c326be42f41865707084181cf0b989857beb1974fda89f2667a9ed}
+
+  - {id: moody_dark, title: "Moody Dark", status: approved, path: cubes/moody_dark.cube, sha256: e6276d267d51fc8a6f049b87efcb897feda72e6c7f433545a10f2be17362336c}
+  - {id: cold_blue, title: "Cold Blue", status: approved, path: cubes/cold_blue.cube, sha256: 21b3892ca09b996daeed8e3335c2c730880588a7c8c9771deda36d56e1750e82}
+
+  - {id: summer_pastel, title: "Summer Pastel", status: approved, path: cubes/summer_pastel.cube, sha256: 178209b76db90fde1de8ed98e945383e670e3752a38485bbccdeb8f118708c60}
+  - {id: cyberpunk, title: "Cyberpunk", status: approved, path: cubes/cyberpunk.cube, sha256: 39e56933d2fcecd809f3e95625ea9fae517a7c908cae638cd8a704983dfd036d}
+  - {id: film_noir, title: "Film Noir", status: approved, path: cubes/film_noir.cube, sha256: 09480046220b8adcbee09d8a2764b6715707a05e9bb31a110db5052ab937942a}
+  - {id: documentary, title: "Documentary", status: approved, path: cubes/documentary.cube, sha256: 8b66db7896ebf6e317f6cbe2c0d3e36630ff4c5a2e065631d2b66d1fba9e4323}
+  - {id: horror, title: "Horror", status: approved, path: cubes/horror.cube, sha256: 96f757103d5e2f28c378baff5c51e293c1629b9a89d9c0a5a80ab277b2ba35ad}
+  - {id: romance, title: "Romance", status: approved, path: cubes/romance.cube, sha256: 1dde859419b33651edeeac89869e763fb626664d430f78c064112de4a5272412}
+  - {id: clean_modern, title: "Clean Modern", status: approved, path: cubes/clean_modern.cube, sha256: 77b620ab06c5cf6ef22f9433034428577ef7da3189c4debdf39213870d3e979b}
+  - {id: apple_neutral, title: "Apple Neutral", status: approved, path: cubes/apple_neutral.cube, sha256: 73bce85e9d0c2620db22b5c6d1f1f184c65182f8a57664efc1bf1b8edff3c1d4}

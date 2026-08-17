@@ -77,7 +77,7 @@ def test_one_dimensional_lut_interpolates_each_channel(tmp_path: Path) -> None:
     np.testing.assert_allclose(apply_cube(rgb, cube), 1.0 - rgb, atol=1e-6)
 
 
-def test_lut_strength_zero_is_pixel_noop(tmp_path: Path) -> None:
+def test_lut_intensity_zero_is_pixel_noop(tmp_path: Path) -> None:
     catalog = _catalog(tmp_path)
     source = tmp_path / "source.png"
     destination = tmp_path / "result.png"
@@ -86,13 +86,15 @@ def test_lut_strength_zero_is_pixel_noop(tmp_path: Path) -> None:
     LutRenderer(catalog).render(
         source,
         destination,
-        LutParameters(lut_id="identity", strength=0, preserve_luminance=False),
+        LutParameters(
+            preset="identity", lut_intensity=0, skin_protection=False, grain_amount=0, halation=0
+        ),
     )
     with Image.open(destination) as result:
         np.testing.assert_array_equal(np.asarray(result), array)
 
 
-def test_lut_strength_hundred_applies_full_transform(tmp_path: Path) -> None:
+def test_lut_intensity_one_applies_full_transform(tmp_path: Path) -> None:
     catalog = _catalog(tmp_path, INVERT_1D)
     source = tmp_path / "source.png"
     destination = tmp_path / "result.png"
@@ -101,7 +103,9 @@ def test_lut_strength_hundred_applies_full_transform(tmp_path: Path) -> None:
     LutRenderer(catalog).render(
         source,
         destination,
-        LutParameters(lut_id="identity", strength=100, preserve_luminance=False),
+        LutParameters(
+            preset="identity", lut_intensity=1, skin_protection=False, grain_amount=0, halation=0
+        ),
     )
 
     with Image.open(destination) as result:

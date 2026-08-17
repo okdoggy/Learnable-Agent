@@ -7,7 +7,6 @@ summary_ko: 기본 감마 곡선이 제거된 선형 카메라 프로파일에�
 version: 0.1.0
 status: candidate
 supported_tools:
-- remaster
 - lut
 confidence: 0.74
 raw_scenario_ids:
