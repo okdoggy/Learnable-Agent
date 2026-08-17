@@ -1,7 +1,7 @@
 schema_version: "1.0"
-calibration_version: "1.1.0"
+calibration_version: "1.2.0"
 edit_plan_version: "1.0"
-remaster_engine_version: "1.0.0"
+remaster_engine_version: "1.1.0"
 input_color_space: "sRGB"
 working_color_space: "linear-sRGB"
 parameters:
@@ -54,6 +54,8 @@ capabilities:
       - "global-gaussian-denoise"
       - "global-unsharp-mask"
       - "global-radial-vignette"
+      - "bounded-channel-gamma-and-gain"
+      - "bounded-selective-hsl"
     unsupported:
       - "semantic-local-masks"
       - "subject-background-independent-adjustment"

@@ -6,10 +6,10 @@ from pathlib import Path
 import numpy as np
 from PIL import Image, ImageFilter, ImageOps
 
-from lala.domain.models import RemasterParameters
+from lala.domain.models import RemasterParameters, SelectiveHslAdjustment
 from lala.renderers.image_io import sha256_file
 
-REMASTER_ENGINE_VERSION = "1.0.0"
+REMASTER_ENGINE_VERSION = "1.1.0"
 
 
 @dataclass(frozen=True, slots=True)
@@ -49,6 +49,14 @@ class RemasterRenderer:
                 ImageFilter.UnsharpMask(
                     radius=1.0 + parameters.sharpness / 100.0,
                     percent=parameters.sharpness * 2,
+                    threshold=2,
+                )
+            )
+        elif parameters.sharpen_amount:
+            encoded = encoded.filter(
+                ImageFilter.UnsharpMask(
+                    radius=0.6 + parameters.sharpen_amount * 0.75,
+                    percent=round(parameters.sharpen_amount * 100),
                     threshold=2,
                 )
             )
@@ -123,6 +131,17 @@ class RemasterRenderer:
             )
             linear *= gains
 
+        gamma = np.array(
+            [parameters.gamma_r, parameters.gamma_g, parameters.gamma_b], dtype=np.float32
+        )
+        gain = np.array(
+            [parameters.gain_r, parameters.gain_g, parameters.gain_b], dtype=np.float32
+        )
+        if not np.array_equal(gamma, np.ones(3, dtype=np.float32)):
+            linear = np.power(np.clip(linear, 0.0, 1.0), 1.0 / gamma)
+        if not np.array_equal(gain, np.ones(3, dtype=np.float32)):
+            linear *= gain
+
         if parameters.vignette:
             height, width = linear.shape[:2]
             yy, xx = np.ogrid[-1.0 : 1.0 : complex(height), -1.0 : 1.0 : complex(width)]
@@ -131,7 +150,67 @@ class RemasterRenderer:
             gain = 1.0 + parameters.vignette / 100.0 * 0.55 * edge_weight
             linear *= gain[..., None]
 
-        return _linear_to_srgb(np.clip(linear, 0.0, 1.0))
+        encoded = _linear_to_srgb(np.clip(linear, 0.0, 1.0))
+        if parameters.hsl_selective:
+            encoded = _apply_selective_hsl(encoded, parameters.hsl_selective)
+        return encoded
+
+
+def _apply_selective_hsl(
+    rgb: np.ndarray, adjustments: list[SelectiveHslAdjustment]
+) -> np.ndarray:
+    hue, saturation, lightness = _rgb_to_hsl(rgb)
+    for adjustment in adjustments:
+        distance = np.abs((hue - adjustment.target_hue + 180.0) % 360.0 - 180.0)
+        weight = np.clip(1.0 - distance / adjustment.hue_range, 0.0, 1.0)
+        hue = (hue + adjustment.hue_shift * weight) % 360.0
+        saturation = np.clip(
+            saturation * (1.0 + adjustment.saturation_shift / 100.0 * weight), 0.0, 1.0
+        )
+        lightness = np.clip(lightness + adjustment.luminance_shift / 100.0 * weight, 0.0, 1.0)
+    return _hsl_to_rgb(hue, saturation, lightness)
+
+
+def _rgb_to_hsl(rgb: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    maximum = rgb.max(axis=-1)
+    minimum = rgb.min(axis=-1)
+    chroma = maximum - minimum
+    lightness = (maximum + minimum) / 2.0
+    hue = np.zeros_like(maximum)
+    non_neutral = chroma > 1e-6
+    red = non_neutral & (maximum == rgb[..., 0])
+    green = non_neutral & (maximum == rgb[..., 1])
+    blue = non_neutral & (maximum == rgb[..., 2])
+    hue[red] = 60.0 * ((rgb[..., 1][red] - rgb[..., 2][red]) / chroma[red] % 6.0)
+    hue[green] = 60.0 * ((rgb[..., 2][green] - rgb[..., 0][green]) / chroma[green] + 2.0)
+    hue[blue] = 60.0 * ((rgb[..., 0][blue] - rgb[..., 1][blue]) / chroma[blue] + 4.0)
+    denominator = 1.0 - np.abs(2.0 * lightness - 1.0)
+    saturation = np.divide(
+        chroma, denominator, out=np.zeros_like(chroma), where=denominator > 1e-6
+    )
+    return hue, saturation, lightness
+
+
+def _hsl_to_rgb(hue: np.ndarray, saturation: np.ndarray, lightness: np.ndarray) -> np.ndarray:
+    chroma = (1.0 - np.abs(2.0 * lightness - 1.0)) * saturation
+    x = chroma * (1.0 - np.abs((hue / 60.0) % 2.0 - 1.0))
+    values = np.zeros((*hue.shape, 3), dtype=np.float32)
+    sectors = np.floor(hue / 60.0).astype(np.int8) % 6
+    channel_sets = (
+        (chroma, x, 0),
+        (x, chroma, 0),
+        (0, chroma, x),
+        (0, x, chroma),
+        (x, 0, chroma),
+        (chroma, 0, x),
+    )
+    for sector, channels in enumerate(channel_sets):
+        mask = sectors == sector
+        for index, channel in enumerate(channels):
+            if isinstance(channel, int):
+                continue
+            values[..., index][mask] = channel[mask]
+    return np.clip(values + (lightness - chroma / 2.0)[..., None], 0.0, 1.0)
 
 
 def _luminance(linear: np.ndarray) -> np.ndarray:

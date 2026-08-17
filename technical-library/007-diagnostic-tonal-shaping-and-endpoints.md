@@ -4,10 +4,11 @@ number: 7
 technical_id: diagnostic-tonal-shaping-and-endpoints
 title_ko: 명도 진단과 끝점 확인을 통한 선택적 톤 설계
 summary_ko: 색을 잠시 배제한 명도 진단과 클리핑 확인으로 톤 문제를 찾고, 필요한 명도 구간에만 대비를 재구축하거나 압축한다.
-version: 1.0.0
+version: 1.0.1
 status: active
 supported_tools:
 - lut
+- remaster
 confidence: 0.9
 raw_scenario_ids:
 - raw-20260807-endclip12

@@ -4,10 +4,11 @@ number: 6
 technical_id: detail-preserving-denoise-and-edge-sharpen
 title_ko: 디테일 보존형 노이즈 제거와 에지 제한 샤프닝
 summary_ko: 대비·선명화 전에 노이즈를 절제해 한 번 처리하고 구조적 에지만 선명화하며, 별·털·깃털과 부드러운 영역의 상충 요구 및 이중 보정을 검증한다.
-version: 1.0.2
+version: 1.0.3
 status: active
 supported_tools:
 - lut
+- remaster
 confidence: 0.94
 raw_scenario_ids:
 - raw-20260803-fogdepth01

@@ -4,10 +4,11 @@ number: 12
 technical_id: restrained-warm-cool-separation
 title_ko: 피부와 광원 관계를 보존하는 절제된 온냉 색 분리
 summary_ko: 기본 색을 안정시킨 뒤 피사체·배경·명도 영역 또는 국소 광원에 따뜻함과 차가운 보색을 절제해 배치하고 보호 영역과 광원 방향을 검증한다.
-version: 1.0.2
+version: 1.0.3
 status: active
 supported_tools:
 - lut
+- remaster
 - generate_ai
 confidence: 0.95
 raw_scenario_ids:

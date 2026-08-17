@@ -7,7 +7,14 @@ import pytest
 from PIL import Image
 
 from lala.domain.errors import LalaError
-from lala.domain.models import EditPlan, LutParameters, LutStep, SkillEvidence
+from lala.domain.models import (
+    EditPlan,
+    LutParameters,
+    LutStep,
+    RemasterParameters,
+    RemasterStep,
+    SkillEvidence,
+)
 from lala.domain.validation import PlanRuntimeValidator
 from lala.hermes.slack import SlackCoordinator, format_slack_plan
 from lala.knowledge.technical import TechnicalLibraryRepository
@@ -167,3 +174,27 @@ def test_format_slack_plan_includes_referenced_technical_document_title() -> Non
     message = format_slack_plan(plan, library=TitleLibrary())
 
     assert "technical-library/shadow-recovery v1.0.0: 그림자 세부 회복" in message
+
+
+def test_format_slack_plan_describes_remaster_operations() -> None:
+    plan = EditPlan(
+        request_id="req_remaster_format",
+        summary_ko="기본 보정으로 톤과 디테일을 정리합니다.",
+        steps=[
+            RemasterStep(
+                order=1,
+                tool="remaster",
+                parameters=RemasterParameters(brightness=8, sharpen_amount=0.8),
+                reason_ko="밝기와 에지 분리를 절제해 보완합니다.",
+                evidence=[],
+            )
+        ],
+        overall_reason_ko="결정론적 기본 보정으로 충분합니다.",
+        confidence=0.7,
+    )
+
+    message = format_slack_plan(plan)
+
+    assert "추천 도구: Remaster" in message
+    assert "밝기: 8" in message
+    assert "샤프닝 amount: 0.80" in message

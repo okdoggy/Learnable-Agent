@@ -4,10 +4,11 @@ number: 1
 technical_id: base-correction-before-creative-grade
 title_ko: 창의적 색보정 전 기본 노출·화이트 밸런스 안정화
 summary_ko: 편집 의도를 먼저 정하고 기본 노출·화이트 밸런스·톤을 안정시킨 뒤 창의적 색보정을 적용하며, 변형 저장과 휴식 후 비교로 색 피로와 무작위 보정을 줄인다.
-version: 1.0.1
+version: 1.0.2
 status: active
 supported_tools:
 - lut
+- remaster
 confidence: 0.93
 raw_scenario_ids:
 - raw-20260803-complementgrade01

@@ -51,7 +51,7 @@ class UploadStatusData(ApiModel):
 
 class ClientCapabilitiesBody(ApiModel):
     edit_plan_version: Literal["1.0"]
-    remaster_engine_version: Literal["1.0"]
+    remaster_engine_version: Literal["1.0", "1.1"]
     lut_catalog_version: Annotated[
         str, StringConstraints(strip_whitespace=True, min_length=1, max_length=64)
     ]
@@ -111,7 +111,7 @@ class EditStatusData(ApiModel):
 class ServiceCapabilitiesData(ApiModel):
     planner: Literal["hermes-llm"] = "hermes-llm"
     edit_plan_versions: tuple[Literal["1.0"], ...] = ("1.0",)
-    remaster_engine_versions: tuple[Literal["1.0"], ...] = ("1.0",)
+    remaster_engine_versions: tuple[Literal["1.0", "1.1"], ...] = ("1.0", "1.1")
     imagegen_execution_modes: tuple[Literal["openai-image-api"], ...] = (
         "openai-image-api",
     )

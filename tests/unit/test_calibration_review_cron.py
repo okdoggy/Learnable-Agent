@@ -60,7 +60,7 @@ def test_calibration_review_context_exposes_only_parameter_promotion_policy() ->
 
     context = json.loads(completed.stdout)
     policy = context["parameter_calibration_policy"]
-    assert policy["calibration_version"] == "1.1.0"
+    assert policy["calibration_version"] == "1.2.0"
     assert policy["atmospheric_effects"]["required_technical_id"] == (
         "restrained-atmospheric-softness"
     )

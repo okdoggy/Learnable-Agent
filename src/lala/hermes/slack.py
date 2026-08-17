@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from lala.domain.errors import LalaError
-from lala.domain.models import EditPlan, GenerateAIStep, LutStep
+from lala.domain.models import EditPlan, GenerateAIStep, LutStep, RemasterStep
 from lala.domain.validation import PlanRuntimeValidator
 from lala.hermes.planner import Planner
 from lala.knowledge.technical import TechnicalLibraryRepository
@@ -122,11 +122,31 @@ class SlackCoordinator:
 
 
 def format_slack_plan(plan: EditPlan, *, library: TechnicalLibraryRepository | None = None) -> str:
-    tool_names = {"lut": "LUT", "generate_ai": "Generate AI"}
+    tool_names = {"remaster": "Remaster", "lut": "LUT", "generate_ai": "Generate AI"}
     lines = [f"추천 도구: {' → '.join(tool_names[step.tool] for step in plan.steps)}", "", "설정"]
     for step in plan.steps:
         lines.append(f"{step.order}. {tool_names[step.tool]}")
-        if isinstance(step, LutStep):
+        if isinstance(step, RemasterStep):
+            parameters = step.parameters
+            if parameters.brightness:
+                lines.append(f"- 밝기: {parameters.brightness}")
+            if parameters.contrast:
+                lines.append(f"- 대비: {parameters.contrast}")
+            if parameters.highlights:
+                lines.append(f"- 하이라이트: {parameters.highlights}")
+            if parameters.shadows:
+                lines.append(f"- 그림자: {parameters.shadows}")
+            if parameters.saturation:
+                lines.append(f"- 채도: {parameters.saturation}")
+            if parameters.temperature or parameters.tint:
+                lines.append(f"- 색온도/틴트: {parameters.temperature}/{parameters.tint}")
+            if parameters.hsl_selective:
+                lines.append(f"- 선택 HSL: {len(parameters.hsl_selective)}개 범위")
+            if parameters.sharpen_amount:
+                lines.append(f"- 샤프닝 amount: {parameters.sharpen_amount:.2f}")
+            elif parameters.sharpness:
+                lines.append(f"- 샤프닝: {parameters.sharpness}")
+        elif isinstance(step, LutStep):
             lines.extend(
                 [
                     f"- LUT: {step.parameters.preset}",

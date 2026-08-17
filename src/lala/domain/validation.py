@@ -6,7 +6,7 @@ from pathlib import Path
 import yaml
 
 from lala.domain.errors import LalaError, PlanValidationError
-from lala.domain.models import EditPlan, LutStep, validate_edit_plan
+from lala.domain.models import EditPlan, LutStep, RemasterStep, validate_edit_plan
 from lala.knowledge.technical import TechnicalLibraryRepository
 from lala.renderers.lut import LutCatalog
 from lala.text import TextEncodingError, read_utf8_lf
@@ -160,6 +160,15 @@ class PlanRuntimeValidator:
                 raise LalaError(
                     "LUT_CATALOG_MISMATCH",
                     "LUT 카탈로그 버전이 서로 다릅니다.",
+                    False,
+                )
+            if (
+                any(isinstance(step, RemasterStep) for step in plan.steps)
+                and capabilities.remaster_engine_version != "1.1"
+            ):
+                raise LalaError(
+                    "REMASTER_ENGINE_UNSUPPORTED",
+                    "클라이언트가 Remaster 엔진 1.1을 지원하지 않습니다.",
                     False,
                 )
         return plan

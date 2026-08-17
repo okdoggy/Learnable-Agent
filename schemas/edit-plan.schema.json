@@ -201,6 +201,226 @@
       "title": "LutStep",
       "type": "object"
     },
+    "RemasterParameters": {
+      "additionalProperties": false,
+      "properties": {
+        "brightness": {
+          "default": 0,
+          "maximum": 100,
+          "minimum": -100,
+          "title": "Brightness",
+          "type": "integer"
+        },
+        "contrast": {
+          "default": 0,
+          "maximum": 100,
+          "minimum": -100,
+          "title": "Contrast",
+          "type": "integer"
+        },
+        "highlights": {
+          "default": 0,
+          "maximum": 100,
+          "minimum": -100,
+          "title": "Highlights",
+          "type": "integer"
+        },
+        "shadows": {
+          "default": 0,
+          "maximum": 100,
+          "minimum": -100,
+          "title": "Shadows",
+          "type": "integer"
+        },
+        "saturation": {
+          "default": 0,
+          "maximum": 100,
+          "minimum": -100,
+          "title": "Saturation",
+          "type": "integer"
+        },
+        "temperature": {
+          "default": 0,
+          "maximum": 100,
+          "minimum": -100,
+          "title": "Temperature",
+          "type": "integer"
+        },
+        "tint": {
+          "default": 0,
+          "maximum": 100,
+          "minimum": -100,
+          "title": "Tint",
+          "type": "integer"
+        },
+        "sharpness": {
+          "default": 0,
+          "maximum": 100,
+          "minimum": 0,
+          "title": "Sharpness",
+          "type": "integer"
+        },
+        "denoise": {
+          "default": 0,
+          "maximum": 100,
+          "minimum": 0,
+          "title": "Denoise",
+          "type": "integer"
+        },
+        "vignette": {
+          "default": 0,
+          "maximum": 100,
+          "minimum": -100,
+          "title": "Vignette",
+          "type": "integer"
+        },
+        "gamma_r": {
+          "default": 1.0,
+          "maximum": 1.5,
+          "minimum": 0.5,
+          "title": "Gamma R",
+          "type": "number"
+        },
+        "gamma_g": {
+          "default": 1.0,
+          "maximum": 1.5,
+          "minimum": 0.5,
+          "title": "Gamma G",
+          "type": "number"
+        },
+        "gamma_b": {
+          "default": 1.0,
+          "maximum": 1.5,
+          "minimum": 0.5,
+          "title": "Gamma B",
+          "type": "number"
+        },
+        "gain_r": {
+          "default": 1.0,
+          "maximum": 1.5,
+          "minimum": 0.5,
+          "title": "Gain R",
+          "type": "number"
+        },
+        "gain_g": {
+          "default": 1.0,
+          "maximum": 1.5,
+          "minimum": 0.5,
+          "title": "Gain G",
+          "type": "number"
+        },
+        "gain_b": {
+          "default": 1.0,
+          "maximum": 1.5,
+          "minimum": 0.5,
+          "title": "Gain B",
+          "type": "number"
+        },
+        "hsl_selective": {
+          "items": {
+            "$ref": "#/$defs/SelectiveHslAdjustment"
+          },
+          "maxItems": 4,
+          "title": "Hsl Selective",
+          "type": "array"
+        },
+        "sharpen_amount": {
+          "default": 0.0,
+          "maximum": 2.0,
+          "minimum": 0.0,
+          "title": "Sharpen Amount",
+          "type": "number"
+        }
+      },
+      "title": "RemasterParameters",
+      "type": "object"
+    },
+    "RemasterStep": {
+      "additionalProperties": false,
+      "properties": {
+        "order": {
+          "maximum": 16,
+          "minimum": 1,
+          "title": "Order",
+          "type": "integer"
+        },
+        "reason_ko": {
+          "maxLength": 4000,
+          "minLength": 1,
+          "pattern": "[가-힣]",
+          "title": "Reason Ko",
+          "type": "string"
+        },
+        "evidence": {
+          "items": {
+            "$ref": "#/$defs/SkillEvidence"
+          },
+          "maxItems": 32,
+          "title": "Evidence",
+          "type": "array"
+        },
+        "tool": {
+          "const": "remaster",
+          "title": "Tool",
+          "type": "string"
+        },
+        "parameters": {
+          "$ref": "#/$defs/RemasterParameters"
+        }
+      },
+      "required": [
+        "order",
+        "reason_ko",
+        "tool",
+        "parameters"
+      ],
+      "title": "RemasterStep",
+      "type": "object"
+    },
+    "SelectiveHslAdjustment": {
+      "additionalProperties": false,
+      "properties": {
+        "target_hue": {
+          "maximum": 359,
+          "minimum": 0,
+          "title": "Target Hue",
+          "type": "integer"
+        },
+        "hue_range": {
+          "maximum": 180,
+          "minimum": 1,
+          "title": "Hue Range",
+          "type": "integer"
+        },
+        "hue_shift": {
+          "default": 0,
+          "maximum": 180,
+          "minimum": -180,
+          "title": "Hue Shift",
+          "type": "integer"
+        },
+        "saturation_shift": {
+          "default": 0,
+          "maximum": 100,
+          "minimum": -100,
+          "title": "Saturation Shift",
+          "type": "integer"
+        },
+        "luminance_shift": {
+          "default": 0,
+          "maximum": 100,
+          "minimum": -100,
+          "title": "Luminance Shift",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "target_hue",
+        "hue_range"
+      ],
+      "title": "SelectiveHslAdjustment",
+      "type": "object"
+    },
     "SkillEvidence": {
       "additionalProperties": false,
       "properties": {
@@ -252,11 +472,15 @@
         "discriminator": {
           "mapping": {
             "generate_ai": "#/$defs/GenerateAIStep",
-            "lut": "#/$defs/LutStep"
+            "lut": "#/$defs/LutStep",
+            "remaster": "#/$defs/RemasterStep"
           },
           "propertyName": "tool"
         },
         "oneOf": [
+          {
+            "$ref": "#/$defs/RemasterStep"
+          },
           {
             "$ref": "#/$defs/LutStep"
           },

@@ -34,6 +34,16 @@ def _generate_step(order: int = 1) -> dict[str, object]:
     }
 
 
+def _remaster_step(order: int = 1, **parameters: object) -> dict[str, object]:
+    return {
+        "order": order,
+        "tool": "remaster",
+        "parameters": parameters,
+        "reason_ko": "기본 톤과 디테일을 보수적으로 정리합니다.",
+        "evidence": [],
+    }
+
+
 def _plan(steps: list[dict[str, object]]) -> dict[str, object]:
     return {
         "schema_version": "1.0",
@@ -56,6 +66,31 @@ def test_lut_parameter_range_is_strict() -> None:
 def test_generate_ai_cannot_be_mixed_with_deterministic_steps() -> None:
     with pytest.raises(ValidationError, match="only v1 step"):
         EditPlan.model_validate(_plan([_generate_step(1), _lut_step(2)]))
+
+
+def test_plan_allows_base_remaster_lut_and_detail_remaster_sequence() -> None:
+    plan = EditPlan.model_validate(
+        _plan(
+            [
+                _remaster_step(1, brightness=4, gamma_r=1.03, gain_b=0.98),
+                _lut_step(2),
+                _remaster_step(
+                    3,
+                    hsl_selective=[
+                        {
+                            "target_hue": 0,
+                            "hue_range": 30,
+                            "saturation_shift": 12,
+                            "luminance_shift": 4,
+                        }
+                    ],
+                    sharpen_amount=0.8,
+                ),
+            ]
+        )
+    )
+
+    assert [step.tool for step in plan.steps] == ["remaster", "lut", "remaster"]
 
 
 def test_steps_must_be_contiguous() -> None:

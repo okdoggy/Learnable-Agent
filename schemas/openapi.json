@@ -317,7 +317,10 @@
           },
           "remaster_engine_version": {
             "type": "string",
-            "const": "1.0",
+            "enum": [
+              "1.0",
+              "1.1"
+            ],
             "title": "Remaster Engine Version"
           },
           "lut_catalog_version": {
@@ -392,6 +395,9 @@
             "items": {
               "oneOf": [
                 {
+                  "$ref": "#/components/schemas/RemasterStep"
+                },
+                {
                   "$ref": "#/components/schemas/LutStep"
                 },
                 {
@@ -402,7 +408,8 @@
                 "propertyName": "tool",
                 "mapping": {
                   "generate_ai": "#/components/schemas/GenerateAIStep",
-                  "lut": "#/components/schemas/LutStep"
+                  "lut": "#/components/schemas/LutStep",
+                  "remaster": "#/components/schemas/RemasterStep"
                 }
               }
             },
@@ -931,6 +938,226 @@
         ],
         "title": "LutStep"
       },
+      "RemasterParameters": {
+        "properties": {
+          "brightness": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": -100.0,
+            "title": "Brightness",
+            "default": 0
+          },
+          "contrast": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": -100.0,
+            "title": "Contrast",
+            "default": 0
+          },
+          "highlights": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": -100.0,
+            "title": "Highlights",
+            "default": 0
+          },
+          "shadows": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": -100.0,
+            "title": "Shadows",
+            "default": 0
+          },
+          "saturation": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": -100.0,
+            "title": "Saturation",
+            "default": 0
+          },
+          "temperature": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": -100.0,
+            "title": "Temperature",
+            "default": 0
+          },
+          "tint": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": -100.0,
+            "title": "Tint",
+            "default": 0
+          },
+          "sharpness": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Sharpness",
+            "default": 0
+          },
+          "denoise": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Denoise",
+            "default": 0
+          },
+          "vignette": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": -100.0,
+            "title": "Vignette",
+            "default": 0
+          },
+          "gamma_r": {
+            "type": "number",
+            "maximum": 1.5,
+            "minimum": 0.5,
+            "title": "Gamma R",
+            "default": 1.0
+          },
+          "gamma_g": {
+            "type": "number",
+            "maximum": 1.5,
+            "minimum": 0.5,
+            "title": "Gamma G",
+            "default": 1.0
+          },
+          "gamma_b": {
+            "type": "number",
+            "maximum": 1.5,
+            "minimum": 0.5,
+            "title": "Gamma B",
+            "default": 1.0
+          },
+          "gain_r": {
+            "type": "number",
+            "maximum": 1.5,
+            "minimum": 0.5,
+            "title": "Gain R",
+            "default": 1.0
+          },
+          "gain_g": {
+            "type": "number",
+            "maximum": 1.5,
+            "minimum": 0.5,
+            "title": "Gain G",
+            "default": 1.0
+          },
+          "gain_b": {
+            "type": "number",
+            "maximum": 1.5,
+            "minimum": 0.5,
+            "title": "Gain B",
+            "default": 1.0
+          },
+          "hsl_selective": {
+            "items": {
+              "$ref": "#/components/schemas/SelectiveHslAdjustment"
+            },
+            "type": "array",
+            "maxItems": 4,
+            "title": "Hsl Selective"
+          },
+          "sharpen_amount": {
+            "type": "number",
+            "maximum": 2.0,
+            "minimum": 0.0,
+            "title": "Sharpen Amount",
+            "default": 0.0
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "RemasterParameters"
+      },
+      "RemasterStep": {
+        "properties": {
+          "order": {
+            "type": "integer",
+            "maximum": 16.0,
+            "minimum": 1.0,
+            "title": "Order"
+          },
+          "reason_ko": {
+            "type": "string",
+            "maxLength": 4000,
+            "minLength": 1,
+            "pattern": "[가-힣]",
+            "title": "Reason Ko"
+          },
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/SkillEvidence"
+            },
+            "type": "array",
+            "maxItems": 32,
+            "title": "Evidence"
+          },
+          "tool": {
+            "type": "string",
+            "const": "remaster",
+            "title": "Tool"
+          },
+          "parameters": {
+            "$ref": "#/components/schemas/RemasterParameters"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "order",
+          "reason_ko",
+          "tool",
+          "parameters"
+        ],
+        "title": "RemasterStep"
+      },
+      "SelectiveHslAdjustment": {
+        "properties": {
+          "target_hue": {
+            "type": "integer",
+            "maximum": 359.0,
+            "minimum": 0.0,
+            "title": "Target Hue"
+          },
+          "hue_range": {
+            "type": "integer",
+            "maximum": 180.0,
+            "minimum": 1.0,
+            "title": "Hue Range"
+          },
+          "hue_shift": {
+            "type": "integer",
+            "maximum": 180.0,
+            "minimum": -180.0,
+            "title": "Hue Shift",
+            "default": 0
+          },
+          "saturation_shift": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": -100.0,
+            "title": "Saturation Shift",
+            "default": 0
+          },
+          "luminance_shift": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": -100.0,
+            "title": "Luminance Shift",
+            "default": 0
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "target_hue",
+          "hue_range"
+        ],
+        "title": "SelectiveHslAdjustment"
+      },
       "ServiceCapabilitiesData": {
         "properties": {
           "planner": {
@@ -953,12 +1180,16 @@
           "remaster_engine_versions": {
             "items": {
               "type": "string",
-              "const": "1.0"
+              "enum": [
+                "1.0",
+                "1.1"
+              ]
             },
             "type": "array",
             "title": "Remaster Engine Versions",
             "default": [
-              "1.0"
+              "1.0",
+              "1.1"
             ]
           },
           "imagegen_execution_modes": {

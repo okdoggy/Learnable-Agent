@@ -332,7 +332,8 @@ def test_production_prompt_requires_lut_before_generate_ai() -> None:
         / "planner-prompt.md"
     ).read_text(encoding="utf-8")
 
-    assert "Vibe Editing 호환 LUT를 기본으로 선택" in prompt
+    assert "Vibe Editing 호환 LUT와 deterministic `remaster`를 조합" in prompt
+    assert "`remaster → lut → remaster` 순서" in prompt
     assert "LUT catalog의 전역 색감·톤·무드 보정으로 목표를 충족할 수 없고" in prompt
     assert "목록 밖의 이름을 preset으로 출력하지 않는다" in prompt
     assert "lut_parameter_selection" in prompt
