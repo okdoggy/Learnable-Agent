@@ -13,10 +13,11 @@ from pydantic import ValidationError
 
 from lala.config import Settings
 from lala.domain.errors import AgentTimeoutError, LalaError, PlanValidationError
-from lala.domain.models import EditPlan
+from lala.domain.models import EditPlan, LutStep
 from lala.knowledge.technical import TechnicalLibraryRepository
 from lala.observability.audit import audit_event
 from lala.renderers.inspection import ImageInspection
+from lala.renderers.lut import LutCatalog
 from lala.resilience import CircuitBreaker
 from lala.text import TextEncodingError, read_utf8_lf
 
@@ -92,6 +93,11 @@ class HermesResponsesPlanner:
             }
             for note in self.library.list_notes(status="active")
         ]
+        catalog = LutCatalog(self.settings.lut_manifest_path)
+        approved_luts = [
+            {"id": entry.lut_id, "title": entry.title}
+            for entry in catalog.approved_entries()
+        ]
         input_text = "\n".join(
             [
                 f"request_id={request_id}",
@@ -100,6 +106,8 @@ class HermesResponsesPlanner:
                 f"이미지 정량 분석: {inspection.model_dump_json()}",
                 "renderer capability 및 parameter calibration registry:",
                 calibration_registry,
+                "실제로 승인된 LUT 카탈로그: LUT step의 preset에는 아래 id만 정확히 사용한다.",
+                json.dumps(approved_luts, ensure_ascii=False, separators=(",", ":")),
                 "실제로 읽을 수 있도록 제공된 active technical library 문서 전문:",
                 json.dumps(active_notes, ensure_ascii=False, separators=(",", ":")),
                 (
@@ -153,8 +161,11 @@ class HermesResponsesPlanner:
                 if plan.request_id != request_id:
                     raise ValueError("request_id mismatch")
                 self.library.validate_plan_evidence(plan)
+                for step in plan.steps:
+                    if isinstance(step, LutStep):
+                        catalog.resolve(step.parameters.preset)
                 return plan
-            except (ValidationError, ValueError, PlanValidationError) as exc:
+            except (ValidationError, ValueError, LalaError) as exc:
                 last_error = str(exc)
         raise PlanValidationError(
             "Hermes 출력이 1회 교정 후에도 EditPlan 계약을 만족하지 못했습니다."

@@ -128,6 +128,87 @@ def test_hermes_planner_performs_one_schema_correction(
     assert "global shadow lift also raises background shadows" in first_input
 
 
+def test_hermes_planner_supplies_approved_lut_ids(
+    settings: Settings, sample_image: Path
+) -> None:
+    payloads: list[dict[str, object]] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        payloads.append(json.loads(request.content))
+        return httpx.Response(200, json=_hermes_response("req_lut_catalog"))
+
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+    planner = HermesResponsesPlanner(
+        replace(settings, hermes_api_key="test-only"),
+        TechnicalLibraryRepository(settings.technical_library_dir),
+        client,
+    )
+
+    planner.plan(
+        request_id="req_lut_catalog",
+        prompt="자연스럽게 보정해줘",
+        image_path=sample_image,
+        inspection=inspect_image(sample_image),
+    )
+
+    first_input = payloads[0]["input"][0]["content"][0]["text"]
+    assert "실제로 승인된 LUT 카탈로그" in first_input
+    assert '"id":"documentary"' in first_input
+    assert "warm_kodak" not in first_input
+
+
+def test_hermes_planner_corrects_unapproved_lut_id(
+    settings: Settings, sample_image: Path
+) -> None:
+    payloads: list[dict[str, object]] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        payloads.append(json.loads(request.content))
+        if len(payloads) == 1:
+            invalid = _hermes_response("req_lut_correction")
+            invalid["id"] = "resp_unapproved_lut"
+            invalid["output"][0]["content"][0]["text"] = json.dumps(
+                {
+                    "schema_version": "1.0",
+                    "request_id": "req_lut_correction",
+                    "summary_ko": "원본 색감을 따뜻하게 보정합니다.",
+                    "steps": [
+                        {
+                            "order": 1,
+                            "tool": "lut",
+                            "parameters": {"preset": "warm_kodak"},
+                            "reason_ko": "전역 색감을 보정합니다.",
+                            "evidence": [],
+                        }
+                    ],
+                    "overall_reason_ko": "전역 보정으로 요청을 충족합니다.",
+                    "confidence": 0.6,
+                    "warnings_ko": [],
+                }
+            )
+            return httpx.Response(200, json=invalid)
+        return httpx.Response(200, json=_hermes_response("req_lut_correction"))
+
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+    planner = HermesResponsesPlanner(
+        replace(settings, hermes_api_key="test-only"),
+        TechnicalLibraryRepository(settings.technical_library_dir),
+        client,
+    )
+
+    plan = planner.plan(
+        request_id="req_lut_correction",
+        prompt="따뜻한 느낌으로 보정해줘",
+        image_path=sample_image,
+        inspection=inspect_image(sample_image),
+    )
+
+    assert plan.steps[0].parameters.preset == "documentary"
+    assert len(payloads) == 2
+    assert payloads[1]["previous_response_id"] == "resp_unapproved_lut"
+    assert "승인된 LUT ID가 아닙니다" in payloads[1]["input"]
+
+
 def test_hermes_planner_retries_transient_rate_limit(
     settings: Settings, sample_image: Path, monkeypatch
 ) -> None:
@@ -201,4 +282,5 @@ def test_production_prompt_requires_lut_before_generate_ai() -> None:
     ).read_text(encoding="utf-8")
 
     assert "Vibe Editing 호환 LUT를 기본으로 선택" in prompt
-    assert "LUT만으로 해결되지 않는" in prompt
+    assert "LUT catalog의 전역 색감·톤·무드 보정으로 목표를 충족할 수 없고" in prompt
+    assert "목록 밖의 이름을 preset으로 출력하지 않는다" in prompt
