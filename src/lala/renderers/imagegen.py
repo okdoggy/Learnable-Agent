@@ -91,7 +91,7 @@ class OpenAIImagegenRunner:
                 raise ExecutionError(
                     "Generate AI 결과가 안전한 일반 파일이 아닙니다.", retryable=False
                 )
-            self._strip_generated_metadata(destination, expected_size=size)
+            actual_size = self._strip_generated_metadata(destination)
         except (OSError, LalaError) as exc:
             if isinstance(exc, ExecutionError):
                 raise
@@ -106,7 +106,7 @@ class OpenAIImagegenRunner:
             sha256=sha256_file(destination),
             model=self.settings.imagegen_model,
             quality=self.settings.imagegen_quality,
-            size=size,
+            size=actual_size,
         )
 
     def _request_with_retries(
@@ -155,18 +155,14 @@ class OpenAIImagegenRunner:
             )
         raise ExecutionError("OpenAI Image API 이미지 편집에 실패했습니다.", retryable=True)
 
-    def _strip_generated_metadata(self, destination: Path, *, expected_size: str) -> None:
+    def _strip_generated_metadata(self, destination: Path) -> str:
         normalized = destination.with_name(f".{destination.stem}.normalized.png")
         normalized.unlink(missing_ok=True)
         try:
             self.validator.normalize(destination, normalized)
             os.replace(normalized, destination)
             asset = self.validator.validate(destination, declared_mime="image/png")
-            expected_dimensions = tuple(int(value) for value in expected_size.split("x"))
-            if (asset.width, asset.height) != expected_dimensions:
-                raise ExecutionError(
-                    "Generate AI 결과 해상도가 요청한 1K 종횡비 계약과 다릅니다.", retryable=True
-                )
+            return f"{asset.width}x{asset.height}"
         finally:
             normalized.unlink(missing_ok=True)
 

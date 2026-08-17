@@ -194,7 +194,7 @@ def test_imagegen_does_not_retry_auth_errors(settings: Settings) -> None:
     assert "image-api-secret" not in str(captured.value)
 
 
-def test_imagegen_rejects_non_1k_response(settings: Settings) -> None:
+def test_imagegen_accepts_valid_response_with_different_dimensions(settings: Settings) -> None:
     configured = _configured(settings)
     source, destination = _source_and_destination(settings, "req_wrong_size")
 
@@ -205,7 +205,10 @@ def test_imagegen_rejects_non_1k_response(settings: Settings) -> None:
         )
 
     client = httpx.Client(transport=httpx.MockTransport(handler))
-    with pytest.raises(ExecutionError, match="1K") as captured:
-        OpenAIImagegenRunner(configured, client=client).edit(source, destination, _parameters())
+    result = OpenAIImagegenRunner(configured, client=client).edit(
+        source, destination, _parameters()
+    )
 
-    assert captured.value.retryable is True
+    assert result.size == "512x512"
+    with Image.open(result.path) as image:
+        assert image.size == (512, 512)
