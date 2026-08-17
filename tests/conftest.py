@@ -46,6 +46,11 @@ calibration:
   shadows:
     conservative_start_range: [-5, 5]
     caution: global shadow lift also raises background shadows
+  lut_parameter_selection:
+    atmospheric_effects:
+      required_technical_id: restrained-atmospheric-softness
+      max_grain_amount: 0.1
+      max_halation: 0.1
 """.lstrip(),
         encoding="utf-8",
     )

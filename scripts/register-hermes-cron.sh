@@ -48,7 +48,7 @@ fi
 
 if [[ "${lala_existing_cron_jobs}" != *"lala-calibration-reviewer"* ]]; then
   TZ="UTC" hermes cron create "0 12 * * *" \
-    "lala-calibration-reviewer 스킬을 따라 마지막 성공 보고서 이후의 Slack 이미지 편집 세션을 최대 5건 검토하라. TTL 안의 원본과 결과가 모두 있을 때만 개발용 전후 품질을 비교하고 capability·parameter calibration 오류와 불필요한 과정을 분류하라. production을 수정하지 말고 사용자 이미지·프롬프트·세션 전문을 저장하지 않은 비식별 후보 보고서를 context의 절대 report_filename에 작성하라. 21:10 publisher가 이를 ${LALA_PROJECT_ROOT}/calibration/reports로 발행한다." \
+    "lala-calibration-reviewer 스킬을 따라 마지막 성공 보고서 이후의 Slack 이미지 편집 세션을 최대 5건 검토하라. context의 parameter_calibration_policy와 active technical-library를 함께 읽고, TTL 안의 원본과 결과가 모두 있을 때만 개발용 전후 품질을 비교하라. capability·parameter calibration 오류와 불필요한 과정을 분류하고, 후보마다 evidence ID/version, 현재 calibration version, 반복성, 고정 TC 비교 필요 여부를 비식별로 기록하라. context의 promotion_requirements를 모두 충족하지 않은 후보는 production 변경 제안으로 승격하지 마라. production을 수정하지 말고 사용자 이미지·프롬프트·세션 전문을 저장하지 않은 비식별 후보 보고서를 context의 절대 report_filename에 작성하라. 21:10 publisher가 이를 ${LALA_PROJECT_ROOT}/calibration/reports로 발행한다." \
     --skill lala-calibration-reviewer \
     --script "${lala_cron_script_name}" \
     --name "lala-calibration-reviewer" \

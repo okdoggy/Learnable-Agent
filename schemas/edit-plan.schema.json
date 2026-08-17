@@ -122,7 +122,7 @@
           "type": "string"
         },
         "lut_intensity": {
-          "default": 0.85,
+          "default": 0.65,
           "maximum": 1.0,
           "minimum": 0.0,
           "title": "Lut Intensity",
@@ -134,14 +134,14 @@
           "type": "boolean"
         },
         "grain_amount": {
-          "default": 0.3,
+          "default": 0.0,
           "maximum": 1.0,
           "minimum": 0.0,
           "title": "Grain Amount",
           "type": "number"
         },
         "halation": {
-          "default": 0.2,
+          "default": 0.0,
           "maximum": 1.0,
           "minimum": 0.0,
           "title": "Halation",

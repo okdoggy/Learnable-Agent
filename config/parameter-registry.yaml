@@ -1,5 +1,5 @@
 schema_version: "1.0"
-calibration_version: "1.0.0"
+calibration_version: "1.1.0"
 edit_plan_version: "1.0"
 remaster_engine_version: "1.0.0"
 input_color_space: "sRGB"
@@ -112,3 +112,25 @@ calibration:
     schedule: "0 12 * * * UTC (21:00 Asia/Seoul)"
     runtime_before_after_quality_gate: false
     production_auto_update: false
+  lut_parameter_selection:
+    decision_owner: "Hermes LLM이 이미지·요청·active technical library 전문의 전체 문맥으로 선택한다. 이 정책은 키워드·점수·alias 기반 routing을 하지 않는다."
+    base_correction_before_creative_grade:
+      required_technical_id: "base-correction-before-creative-grade"
+      procedure: "노출·화이트밸런스·색중립과 피사체 가독성을 먼저 판단한 뒤 creative LUT를 선택한다. 전역 LUT로 국소 문제를 해결하려 하지 않는다."
+    conservative_start:
+      lut_intensity: [0.45, 0.70]
+      grain_amount: [0.0, 0.10]
+      halation: [0.0, 0.10]
+    atmospheric_effects:
+      required_technical_id: "restrained-atmospheric-softness"
+      max_grain_amount: 0.10
+      max_halation: 0.10
+      procedure: "grain 또는 halation은 실제 대기감·필름 질감이 목표에 필요한 경우만 선택한다. 둘 다 기본값은 0이며, haze·회색 막·피사체 가독성 저하 징후가 있으면 적용하지 않는다."
+    tonal_separation:
+      required_technical_id: "diagnostic-tonal-shaping-and-endpoints"
+      procedure: "하이라이트를 낮추고 그림자를 올리는 누적 조합이 검정점·중간톤 분리를 평평하게 만들지 검토한다. 전역 LUT가 부족하거나 국소 조정이 필요하면 capability warning 또는 Generate AI를 선택한다."
+    promotion_requirements:
+      - "offline report에서 독립된 반복 사례와 사용자 피드백을 비식별로 확인한다."
+      - "고정된 권리 확보 TC에서 기존 registry와 candidate registry를 직접 시각 비교한다."
+      - "benchmark 무회귀와 active evidence version 일치를 확인한 별도 개발 검증만 calibration_version을 올릴 수 있다."
+      - "production runtime은 registry, LUT cube 또는 manifest를 자동으로 수정하지 않는다."

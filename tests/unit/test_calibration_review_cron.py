@@ -47,6 +47,26 @@ def test_calibration_review_context_uses_workdir_without_environment(tmp_path: P
     assert context["project_root"] == str(tmp_path.resolve())
 
 
+def test_calibration_review_context_exposes_only_parameter_promotion_policy() -> None:
+    env = {**os.environ, "LALA_PROJECT_ROOT": str(PROJECT_ROOT)}
+
+    completed = subprocess.run(
+        [sys.executable, str(PROJECT_ROOT / "scripts" / "calibration_review_context.py")],
+        check=True,
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+
+    context = json.loads(completed.stdout)
+    policy = context["parameter_calibration_policy"]
+    assert policy["calibration_version"] == "1.1.0"
+    assert policy["atmospheric_effects"]["required_technical_id"] == (
+        "restrained-atmospheric-softness"
+    )
+    assert len(policy["promotion_requirements"]) == 4
+
+
 def test_calibration_review_context_reads_installed_project_root_marker(tmp_path: Path) -> None:
     script_dir = tmp_path / "scripts"
     script_dir.mkdir()

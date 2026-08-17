@@ -48,10 +48,10 @@ class RemasterParameters(StrictModel):
 
 class LutParameters(StrictModel):
     preset: StrictId
-    lut_intensity: float = Field(default=0.85, ge=0.0, le=1.0)
+    lut_intensity: float = Field(default=0.65, ge=0.0, le=1.0)
     skin_protection: bool = True
-    grain_amount: float = Field(default=0.3, ge=0.0, le=1.0)
-    halation: float = Field(default=0.2, ge=0.0, le=1.0)
+    grain_amount: float = Field(default=0.0, ge=0.0, le=1.0)
+    halation: float = Field(default=0.0, ge=0.0, le=1.0)
     use_aces: bool = True
 
 

@@ -209,6 +209,57 @@ def test_hermes_planner_corrects_unapproved_lut_id(
     assert "승인된 LUT ID가 아닙니다" in payloads[1]["input"]
 
 
+def test_hermes_planner_corrects_unsupported_atmospheric_parameter(
+    settings: Settings, sample_image: Path
+) -> None:
+    payloads: list[dict[str, object]] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        payloads.append(json.loads(request.content))
+        if len(payloads) == 1:
+            invalid = _hermes_response("req_atmosphere_correction")
+            invalid["id"] = "resp_atmosphere_without_evidence"
+            invalid["output"][0]["content"][0]["text"] = json.dumps(
+                {
+                    "schema_version": "1.0",
+                    "request_id": "req_atmosphere_correction",
+                    "summary_ko": "사진에 필름 질감을 더합니다.",
+                    "steps": [
+                        {
+                            "order": 1,
+                            "tool": "lut",
+                            "parameters": {"preset": "documentary", "grain_amount": 0.1},
+                            "reason_ko": "전역적인 필름 질감을 더합니다.",
+                            "evidence": [],
+                        }
+                    ],
+                    "overall_reason_ko": "전역 LUT로 요청을 충족합니다.",
+                    "confidence": 0.6,
+                    "warnings_ko": [],
+                }
+            )
+            return httpx.Response(200, json=invalid)
+        return httpx.Response(200, json=_hermes_response("req_atmosphere_correction"))
+
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+    planner = HermesResponsesPlanner(
+        replace(settings, hermes_api_key="test-only"),
+        TechnicalLibraryRepository(settings.technical_library_dir),
+        client,
+    )
+
+    plan = planner.plan(
+        request_id="req_atmosphere_correction",
+        prompt="필름 느낌을 살려줘",
+        image_path=sample_image,
+        inspection=inspect_image(sample_image),
+    )
+
+    assert plan.steps[0].parameters.grain_amount == 0
+    assert len(payloads) == 2
+    assert "restrained-atmospheric-softness" in payloads[1]["input"]
+
+
 def test_hermes_planner_retries_transient_rate_limit(
     settings: Settings, sample_image: Path, monkeypatch
 ) -> None:
@@ -284,3 +335,6 @@ def test_production_prompt_requires_lut_before_generate_ai() -> None:
     assert "Vibe Editing 호환 LUT를 기본으로 선택" in prompt
     assert "LUT catalog의 전역 색감·톤·무드 보정으로 목표를 충족할 수 없고" in prompt
     assert "목록 밖의 이름을 preset으로 출력하지 않는다" in prompt
+    assert "lut_parameter_selection" in prompt
+    assert "grain_amount=0" in prompt
+    assert "restrained-atmospheric-softness" in prompt

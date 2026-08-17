@@ -14,7 +14,7 @@ from lala.domain.models import (
     GenerateAIParameters,
     LutParameters,
 )
-from lala.domain.validation import PlanRuntimeValidator
+from lala.domain.validation import LutCalibrationPolicy, PlanRuntimeValidator
 from lala.hermes.planner import build_planner
 from lala.hermes.slack import SlackCoordinator
 from lala.knowledge.models import RawScenarioSubmission, TechnicalNoteSubmission
@@ -123,7 +123,9 @@ def build_runtime(settings: Settings, *, imagegen: ImagegenRunner | None = None)
         settings=settings,
         workspaces=WorkspaceManager(settings.var_dir / "jobs"),
         validator=PlanRuntimeValidator(
-            catalog, TechnicalLibraryRepository(settings.technical_library_dir)
+            catalog,
+            TechnicalLibraryRepository(settings.technical_library_dir),
+            LutCalibrationPolicy(settings.parameter_registry_path),
         ),
         lut=LutRenderer(catalog),
         imagegen=imagegen or OpenAIImagegenRunner(settings),

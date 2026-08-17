@@ -14,6 +14,7 @@ from pydantic import ValidationError
 from lala.config import Settings
 from lala.domain.errors import AgentTimeoutError, LalaError, PlanValidationError
 from lala.domain.models import EditPlan, LutStep
+from lala.domain.validation import LutCalibrationPolicy
 from lala.knowledge.technical import TechnicalLibraryRepository
 from lala.observability.audit import audit_event
 from lala.renderers.inspection import ImageInspection
@@ -44,6 +45,7 @@ class HermesResponsesPlanner:
     ) -> None:
         self.settings = settings
         self.library = library
+        self.calibration_policy = LutCalibrationPolicy(settings.parameter_registry_path)
         self.client = client or httpx.Client(timeout=settings.hermes_timeout_seconds)
         self.circuit_breaker = CircuitBreaker(
             failure_threshold=settings.hermes_circuit_failures,
@@ -164,6 +166,7 @@ class HermesResponsesPlanner:
                 for step in plan.steps:
                     if isinstance(step, LutStep):
                         catalog.resolve(step.parameters.preset)
+                self.calibration_policy.validate(plan, self.library)
                 return plan
             except (ValidationError, ValueError, LalaError) as exc:
                 last_error = str(exc)

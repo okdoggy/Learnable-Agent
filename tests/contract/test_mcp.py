@@ -53,3 +53,4 @@ def test_mcp_runtime_uses_openai_image_api_by_default(settings: Settings) -> Non
     runtime = build_runtime(settings)
 
     assert isinstance(runtime.imagegen, OpenAIImagegenRunner)
+    assert runtime.validator.calibration_policy is not None

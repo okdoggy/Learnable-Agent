@@ -27,7 +27,7 @@ from lala.api.models import (
 from lala.api.service import EditRequestService
 from lala.config import Settings
 from lala.domain.errors import LalaError
-from lala.domain.validation import PlanRuntimeValidator
+from lala.domain.validation import LutCalibrationPolicy, PlanRuntimeValidator
 from lala.hermes.planner import Planner, build_planner
 from lala.knowledge.technical import TechnicalLibraryRepository
 from lala.observability.metrics import METRICS
@@ -50,7 +50,11 @@ def create_app(settings: Settings | None = None, *, planner: Planner | None = No
     assets = AssetService(config, database)
     catalog = LutCatalog(config.lut_manifest_path)
     technical_library = TechnicalLibraryRepository(config.technical_library_dir)
-    runtime_validator = PlanRuntimeValidator(catalog, technical_library)
+    runtime_validator = PlanRuntimeValidator(
+        catalog,
+        technical_library,
+        LutCalibrationPolicy(config.parameter_registry_path),
+    )
     selected_planner = planner or build_planner(config)
     workspaces = WorkspaceManager(config.var_dir / "jobs")
     requests = EditRequestService(
