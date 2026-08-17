@@ -3,13 +3,13 @@ catalog_version: "2026-08-12"
 # Vibe Editing 호환 33³ LUT 카탈로그. 모든 LUT는 프로젝트에서 생성·검증한다.
 luts:
   - {id: teal_orange, title: "Cinematic Teal Orange", status: approved, path: cubes/cinematic_teal_orange.cube, sha256: 6c04ff31afa96529d099c913410f74d33bd642076ce0488c676c58f0c45d6448}
-  - {id: warm_kodak, title: "Warm Kodak", status: approved, path: cubes/warm_kodak.cube, sha256: 0fecd14643a5aa439bfbec1a82f6e73ef4916a9ade7895af9808470da68731e6}
+
   - {id: fuji_velvia, title: "Fuji Velvia", status: approved, path: cubes/fuji_velvia.cube, sha256: 357496b762aa0cb319705efc4d8567a0f417aaea17dd1edcbc49d0426849ef6f}
   - {id: matte_fade, title: "Matte Fade", status: approved, path: cubes/matte_fade.cube, sha256: 55a5fdf272c326be42f41865707084181cf0b989857beb1974fda89f2667a9ed}
-  - {id: golden_hour, title: "Golden Hour", status: approved, path: cubes/golden_hour.cube, sha256: e0b5892ab2a23258509057a2122dcceaba8d8848d55665f27e6d39591f1f5f93}
+
   - {id: moody_dark, title: "Moody Dark", status: approved, path: cubes/moody_dark.cube, sha256: e6276d267d51fc8a6f049b87efcb897feda72e6c7f433545a10f2be17362336c}
   - {id: cold_blue, title: "Cold Blue", status: approved, path: cubes/cold_blue.cube, sha256: 21b3892ca09b996daeed8e3335c2c730880588a7c8c9771deda36d56e1750e82}
-  - {id: vintage_analog, title: "Vintage Analog", status: approved, path: cubes/vintage_analog.cube, sha256: 05b129c5c2ee7170301db6e4b6ea050c33f14111f94c52a3c94c0836620647ac}
+
   - {id: summer_pastel, title: "Summer Pastel", status: approved, path: cubes/summer_pastel.cube, sha256: 178209b76db90fde1de8ed98e945383e670e3752a38485bbccdeb8f118708c60}
   - {id: cyberpunk, title: "Cyberpunk", status: approved, path: cubes/cyberpunk.cube, sha256: 39e56933d2fcecd809f3e95625ea9fae517a7c908cae638cd8a704983dfd036d}
   - {id: film_noir, title: "Film Noir", status: approved, path: cubes/film_noir.cube, sha256: 09480046220b8adcbee09d8a2764b6715707a05e9bb31a110db5052ab937942a}

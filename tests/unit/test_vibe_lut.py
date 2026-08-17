@@ -2,13 +2,16 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
+from lala.domain.errors import LalaError
 from lala.domain.models import LutParameters
 from lala.renderers.lut import LutCatalog
 
 
 def test_vibe_lut_parameters_expose_expert_grade_controls() -> None:
     parameters = LutParameters(
-        preset="warm_kodak",
+        preset="documentary",
         lut_intensity=0.8,
         skin_protection=True,
         grain_amount=0.2,
@@ -16,7 +19,7 @@ def test_vibe_lut_parameters_expose_expert_grade_controls() -> None:
         use_aces=True,
     )
 
-    assert parameters.preset == "warm_kodak"
+    assert parameters.preset == "documentary"
     assert parameters.lut_intensity == 0.8
     assert parameters.skin_protection is True
     assert parameters.grain_amount == 0.2
@@ -30,13 +33,10 @@ def test_vibe_lut_catalog_contains_all_supported_presets() -> None:
 
     assert {entry.lut_id for entry in catalog.approved_entries()} == {
         "teal_orange",
-        "warm_kodak",
         "fuji_velvia",
         "matte_fade",
-        "golden_hour",
         "moody_dark",
         "cold_blue",
-        "vintage_analog",
         "summer_pastel",
         "cyberpunk",
         "film_noir",
@@ -46,3 +46,12 @@ def test_vibe_lut_catalog_contains_all_supported_presets() -> None:
         "clean_modern",
         "apple_neutral",
     }
+
+
+@pytest.mark.parametrize("preset", ["warm_kodak", "golden_hour", "vintage_analog"])
+def test_removed_vibe_lut_presets_cannot_be_resolved(preset: str) -> None:
+    root = Path(__file__).resolve().parents[2]
+    catalog = LutCatalog(root / "luts" / "manifest.yaml")
+
+    with pytest.raises(LalaError, match="승인된 LUT ID"):
+        catalog.resolve(preset)
