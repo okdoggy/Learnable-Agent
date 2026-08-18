@@ -32,7 +32,7 @@ class LutCalibrationPolicy:
         self._atmospheric_evidence_id: str | None = None
         self._max_grain_amount: float | None = None
         self._max_halation: float | None = None
-        self._forbid_pre_lut_lift_and_rolloff_stack = False
+        self._pre_lut_high_strength_stack: tuple[int, int, int] | None = None
         self._load()
 
     def validate(self, plan: EditPlan, library: TechnicalLibraryRepository) -> None:
@@ -66,13 +66,18 @@ class LutCalibrationPolicy:
                 self._validate_pre_lut_tonal_guard(step)
 
     def _validate_pre_lut_tonal_guard(self, step: RemasterStep) -> None:
-        if not self._forbid_pre_lut_lift_and_rolloff_stack:
+        if self._pre_lut_high_strength_stack is None:
             return
         parameters = step.parameters
-        if parameters.brightness > 0 and parameters.shadows > 0 and parameters.highlights < 0:
+        min_brightness, min_shadows, max_highlights = self._pre_lut_high_strength_stack
+        if (
+            parameters.brightness >= min_brightness
+            and parameters.shadows >= min_shadows
+            and parameters.highlights <= max_highlights
+        ):
             raise PlanValidationError(
-                "pre-LUT remaster는 brightness 상승, shadow lift, highlight roll-off를 "
-                "동시에 적용할 수 없습니다. 검정점과 중간톤 분리를 훼손할 수 있습니다."
+                "pre-LUT remaster의 고강도 brightness 상승, shadow lift, highlight roll-off "
+                "누적은 검정점과 중간톤 분리를 훼손할 수 있습니다."
             )
 
     def _load(self) -> None:
@@ -139,14 +144,35 @@ class LutCalibrationPolicy:
                 "pre_lut_tonal_guard 형식이 올바르지 않습니다.",
                 False,
             )
-        forbid_stack = guard.get("forbid_lift_and_rolloff_stack")
-        if not isinstance(forbid_stack, bool):
+        stack = guard.get("high_strength_lift_and_rolloff_stack")
+        if not isinstance(stack, dict) or set(stack) != {
+            "min_brightness",
+            "min_shadows",
+            "max_highlights",
+        }:
             raise LalaError(
                 "CALIBRATION_REGISTRY_INVALID",
-                "pre_lut_tonal_guard forbid_lift_and_rolloff_stack 형식이 올바르지 않습니다.",
+                "pre_lut_tonal_guard high_strength_lift_and_rolloff_stack "
+                "형식이 올바르지 않습니다.",
                 False,
             )
-        self._forbid_pre_lut_lift_and_rolloff_stack = forbid_stack
+        min_brightness = stack["min_brightness"]
+        min_shadows = stack["min_shadows"]
+        max_highlights = stack["max_highlights"]
+        values = (min_brightness, min_shadows, max_highlights)
+        if any(isinstance(value, bool) or not isinstance(value, int) for value in values):
+            raise LalaError(
+                "CALIBRATION_REGISTRY_INVALID",
+                "pre_lut_tonal_guard 고강도 threshold 형식이 올바르지 않습니다.",
+                False,
+            )
+        if min_brightness <= 0 or min_shadows <= 0 or max_highlights >= 0:
+            raise LalaError(
+                "CALIBRATION_REGISTRY_INVALID",
+                "pre_lut_tonal_guard 고강도 threshold 방향이 올바르지 않습니다.",
+                False,
+            )
+        self._pre_lut_high_strength_stack = values
 
 
 def _bounded_fraction(policy: dict[object, object], key: str) -> float:

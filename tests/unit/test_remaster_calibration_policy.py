@@ -48,6 +48,12 @@ def test_pre_lut_remaster_rejects_exposure_shadow_highlight_stack(tmp_path: Path
         _policy().validate(plan, TechnicalLibraryRepository(tmp_path / "technical-library"))
 
 
+def test_pre_lut_remaster_allows_low_strength_tonal_stack(tmp_path: Path) -> None:
+    plan = _plan(RemasterParameters(brightness=1, shadows=3, highlights=-2))
+
+    _policy().validate(plan, TechnicalLibraryRepository(tmp_path / "technical-library"))
+
+
 def test_pre_lut_remaster_allows_nonstacked_llm_tonal_correction(tmp_path: Path) -> None:
     plan = _plan(RemasterParameters(brightness=12, contrast=4))
 
